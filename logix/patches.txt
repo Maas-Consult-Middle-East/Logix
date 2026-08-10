@@ -4,3 +4,6 @@
 
 [post_model_sync]
 # Patches added in this section will be executed after doctypes are migrated
+logix.patches.v1_0_0_create_logix_roles_and_fields
+logix.patches.v1_0_1_create_workspace_and_permissions
+logix.patches.v1_0_2_add_branch_to_user

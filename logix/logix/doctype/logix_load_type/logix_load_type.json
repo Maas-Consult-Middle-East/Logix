@@ -1,0 +1,1 @@
+{ "doctype": "DocType", "name": "Logix Load Type", "module": "Logix", "custom": 1, "fields": [{"fieldname": "load_type_name", "label": "Load Type", "fieldtype": "Data", "reqd": 1}, {"fieldname": "description", "label": "Description", "fieldtype": "Small Text"}], "permissions": [{"role": "System Manager", "read": 1, "write": 1}], "istable": 0 }

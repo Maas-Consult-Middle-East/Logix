@@ -5,6 +5,29 @@ app_description = "Freight forwarding, transportation, dispatch, shipment tracki
 app_email = "admin@localhost"
 app_license = "mit"
 
+# Export fixtures for idempotent installs
+fixtures = [
+	"Custom Field",
+	"Role",
+	"Workspace",
+]
+
+permission_query_conditions = {
+	"Logix Estimation": "logix.permissions.estimation_query",
+	"Logix Job": "logix.permissions.job_query",
+	"Logix Shipment Order": "logix.permissions.shipment_order_query",
+	"Logix Shipment": "logix.permissions.shipment_query",
+	"Logix Trip": "logix.permissions.trip_query",
+}
+
+has_permission = {
+	"Logix Estimation": "logix.permissions.has_branch_permission",
+	"Logix Job": "logix.permissions.has_branch_permission",
+	"Logix Shipment Order": "logix.permissions.has_branch_permission",
+	"Logix Shipment": "logix.permissions.has_branch_permission",
+	"Logix Trip": "logix.permissions.has_branch_permission",
+}
+
 # Apps
 # ------------------
 
@@ -246,4 +269,3 @@ app_license = "mit"
 # ------------
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
-
