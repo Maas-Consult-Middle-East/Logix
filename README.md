@@ -1,33 +1,31 @@
-### Logix
+# Logix
 
-Freight forwarding, transportation, dispatch, shipment tracking, fleet/resource costing, billing, and storage-space-rental
+Logix is a Frappe/ERPNext v15 logistics extension for freight forwarding, transport dispatch, shipment tracking, resource costing, billing preparation, and space rental.
 
-### Installation
-
-You can install this app using the [bench](https://github.com/frappe/bench) CLI:
+## Development installation
 
 ```bash
-cd $PATH_TO_YOUR_BENCH
-bench get-app $URL_OF_THIS_REPO --branch develop
-bench install-app logix
+bench get-app <repository-url> --branch develop
+bench --site logix.localhost install-app logix
+bench --site logix.localhost set-config developer_mode 1
+bench --site logix.localhost migrate
+bench build
 ```
 
-### Contributing
+Configure Logix Settings and create Branch user permissions before operational use. Map service Items there rather than relying on hard-coded Item codes.
 
-This app uses `pre-commit` for code formatting and linting. Please [install pre-commit](https://pre-commit.com/#installation) and enable it for this repository:
+## Development and tests
 
 ```bash
-cd apps/logix
-pre-commit install
+bench start
+bench --site logix.localhost migrate
+bench --site logix.localhost run-tests --app logix
+bench build
 ```
 
-Pre-commit is configured to use the following tools for checking and formatting your code:
+Public tracking uses random tokens and returns only an explicit safe field set. Keep expiry enabled, regenerate compromised links, and never expose internal Shipment documents to Guest. User-facing strings use Frappe translation wrappers; Arabic translations and RTL visual QA remain pending.
 
-- ruff
-- eslint
-- prettier
-- pyupgrade
+Before upgrades, back up the site, update compatible version-15 branches, run migrations and assets, then run the full app test suite. See `LOGIX_IMPLEMENTATION.md` for implemented scope and known gaps.
 
-### License
-
-mit
+License: MIT.
+# Logix
