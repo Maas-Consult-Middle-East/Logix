@@ -106,6 +106,7 @@ has_permission = {
 
 before_install = "logix.install.before_install"
 after_install = "logix.install.after_install"
+after_migrate = "logix.install.after_migrate"
 
 # Uninstallation
 # ------------

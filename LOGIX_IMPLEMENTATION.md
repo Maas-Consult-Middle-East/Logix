@@ -62,4 +62,4 @@ Phase 4 is partial. Trip Plan, Docket/Waybills/POD/driver UI, costing, storage, 
 
 Never edit Frappe/ERPNext core. Add schema through app DocTypes, registered idempotent patches, and app-managed custom fields. Run migrate, asset build, and the full Logix suite for every upgrade.
 
-Fresh installs run `logix.install.before_install` to provision Workspace role dependencies and `logix.install.after_install` to synchronize the populated Logix Workspace. Fixtures are filtered to Logix-only Custom Fields, Roles, and the Logix Workspace so installing the app cannot import unrelated records from the development site.
+Fresh installs run `logix.install.before_install` to provision Workspace role dependencies and `logix.install.after_install` to synchronize the populated Logix Workspace. `logix.install.after_migrate` provides the same idempotent provisioning for existing production sites during upgrades. System Managers and Logix roles can see the Workspace. Fixtures are filtered to Logix-only Custom Fields, Roles, and the Logix Workspace so installing the app cannot import unrelated records from the development site.

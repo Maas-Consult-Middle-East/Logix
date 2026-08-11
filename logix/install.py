@@ -25,5 +25,11 @@ def before_install():
 
 def after_install():
 	"""Ensure every fresh Logix installation receives the populated Desk workspace."""
+	after_migrate()
+
+
+def after_migrate():
+	"""Provision or repair the Workspace on both fresh installs and app upgrades."""
+	before_install()
 	create_logix_workspace()
 	frappe.clear_cache()
