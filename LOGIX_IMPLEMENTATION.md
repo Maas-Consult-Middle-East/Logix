@@ -14,6 +14,7 @@ Logix is an installable Frappe/ERPNext v15 app. ERPNext owns accounting and the 
 
 - Foundation: Logix Settings, City, Route, Load Type, Vehicle Type, roles, ERPNext custom fields, branch permission hooks, and a version-controlled Logix Workspace with operational shortcuts and grouped Commercial, Operations, Fleet, Masters, Billing, and Setup cards.
 - Commercial: Logix Estimation, Transport Rate Card, Logix Job, customer-default inheritance, estimation requirement/acceptance/locking, rate precedence and weight/CBM/stop/minimum/return pricing service.
+- Estimation pricing: route, vehicle/load type, numeric weight/CBM, extra stops, and trip-pricing inputs support server-side Rate Card calculation or explicitly permitted Manual pricing. Applied rate card and currency remain traceable on the Estimation.
 - Shipment: Shipment Order, Shipment, Shipment Stop, Shipment Leg, Trip Shipment Allocation, Shipment Event, Handover.
 - Trips (foundation): Logix Trip with mixed resource modes, owned/vendor resources, split/shared allocations, and backhaul linkage.
 - Security/services: controlled shipment transitions, audited overrides, random public tracking tokens, expiry/revocation checks, allowlisted guest response.
@@ -60,3 +61,5 @@ Phase 4 is partial. Trip Plan, Docket/Waybills/POD/driver UI, costing, storage, 
 ## Upgrade notes
 
 Never edit Frappe/ERPNext core. Add schema through app DocTypes, registered idempotent patches, and app-managed custom fields. Run migrate, asset build, and the full Logix suite for every upgrade.
+
+Fresh installs run `logix.install.before_install` to provision Workspace role dependencies and `logix.install.after_install` to synchronize the populated Logix Workspace. Fixtures are filtered to Logix-only Custom Fields, Roles, and the Logix Workspace so installing the app cannot import unrelated records from the development site.

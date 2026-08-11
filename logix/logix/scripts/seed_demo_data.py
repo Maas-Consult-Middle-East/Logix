@@ -67,7 +67,12 @@ def execute():
 	estimation = _get_or_create(
 		"Logix Estimation",
 		{"customer": customer.name, "branch": branch.name, "notes": f"{DEMO_PREFIX} commercial estimate"},
-		{"status": "Accepted", "estimated_revenue": 2200, "estimated_direct_cost": 1500},
+		{
+			"status": "Accepted", "from_city": origin.name, "to_city": destination.name,
+			"vehicle_type": vehicle_type.name, "load_type": load_type.name, "base_weight": 8000,
+			"cbm": 30, "pricing_source": "Manual", "estimated_revenue": 2200,
+			"estimated_direct_cost": 1500,
+		},
 	)
 	job = _get_or_create(
 		"Logix Job",

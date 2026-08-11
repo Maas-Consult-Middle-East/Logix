@@ -20,8 +20,10 @@ def find_rate_card(customer, from_city, to_city, vehicle_type=None, load_type=No
 	if load_type:
 		base_filters["load_type"] = load_type
 
-	for rate_customer in (customer, ""):
-		filters = dict(base_filters, customer=rate_customer)
+	for rate_customer in (customer, None):
+		filters = dict(base_filters)
+		filters["customer"] = rate_customer if rate_customer else ["is", "not set"]
+		filters["disabled"] = 0
 		cards = frappe.get_all(
 			"Logix Transport Rate Card",
 			filters=filters,

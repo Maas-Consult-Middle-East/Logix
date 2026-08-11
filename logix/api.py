@@ -14,7 +14,9 @@ def create_job_from_estimation(estimation):
 	job = frappe.get_doc({
 		"doctype": "Logix Job", "customer": est.customer, "branch": est.branch,
 		"estimation": est.name, "agreed_revenue": est.estimated_revenue,
-		"estimated_cost": est.estimated_direct_cost,
+		"estimated_cost": est.estimated_direct_cost, "from_city": est.from_city,
+		"to_city": est.to_city, "load_type": est.load_type,
+		"preferred_vehicle_type": est.vehicle_type,
 	})
 	job.insert()
 	frappe.db.set_value("Logix Estimation", est.name, {"status": "Accepted", "downstream_job": job.name})

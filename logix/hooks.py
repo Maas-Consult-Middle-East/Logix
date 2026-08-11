@@ -5,11 +5,10 @@ app_description = "Freight forwarding, transportation, dispatch, shipment tracki
 app_email = "admin@localhost"
 app_license = "mit"
 
-# Export fixtures for idempotent installs
 fixtures = [
-	"Custom Field",
-	"Role",
-	"Workspace",
+	{"dt": "Custom Field", "filters": [["fieldname", "like", "logix_%"]]},
+	{"dt": "Role", "filters": [["role_name", "like", "Logix %"]]},
+	{"dt": "Workspace", "filters": [["name", "=", "Logix"]]},
 ]
 
 permission_query_conditions = {
@@ -105,8 +104,8 @@ has_permission = {
 # Installation
 # ------------
 
-# before_install = "logix.install.before_install"
-# after_install = "logix.install.after_install"
+before_install = "logix.install.before_install"
+after_install = "logix.install.after_install"
 
 # Uninstallation
 # ------------
