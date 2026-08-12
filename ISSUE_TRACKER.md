@@ -1,6 +1,6 @@
 # Logix Issue Tracker
 
-Last updated: 2026-08-11
+Last updated: 2026-08-12
 
 Status definitions: **Done**, **In Progress**, **Ready for Production Verification**, **Backlog**.
 
@@ -18,10 +18,15 @@ Status definitions: **Done**, **In Progress**, **Ready for Production Verificati
 | LOGIX-008 | Calculate Estimation selling price from Rate Cards | Critical | Done | Customer-specific rates take precedence over generic rates; base, excess weight, CBM, stops, minimum, round-trip, and return pricing calculate server-side. |
 | LOGIX-009 | Preserve controlled manual Estimation pricing | High | Done | Manual pricing works only when enabled in Logix Settings; revenue and currency are editable only for Manual pricing. |
 | LOGIX-010 | Safely migrate legacy Estimation measurement text | High | Done | Patch `v1_0_3_normalize_estimation_measurements` preserves records and converts legacy weight/CBM values before schema synchronization. |
-| LOGIX-011 | Map Estimation transport fields into Job creation | High | Done | Job creation maps cities, load type, preferred vehicle type, revenue, and estimated cost. |
+| LOGIX-011 | Map Estimation transport fields into Job creation | High | Done | Both Job creation paths map customer, branch, cities, load type, preferred vehicle type, revenue, and estimated cost while preserving the Job's Draft status and naming series. |
 | LOGIX-012 | Improve Apply Rate Card behavior on incomplete forms | Medium | Backlog | Button is disabled or hidden until all matching fields are populated, and incomplete input produces a specific validation message rather than “no rate card.” |
 | LOGIX-013 | Verify the Workspace on the production site | Critical | Ready for Production Verification | Updated app code is deployed; migrate/cache clear/restart complete; a System Manager and one Logix role can open the Workspace. |
 | LOGIX-014 | Expand Estimation pricing regression coverage | Medium | Backlog | Automated tests cover customer/generic precedence, missing cards, disabled/expired cards, manual pricing disabled, round/return rates, and Job mapping. |
+| LOGIX-015 | Give Administrator explicit full access to every Logix DocType | Critical | Done | All 14 standalone Logix DocTypes contain an explicit Administrator permission row; transaction DocTypes grant submit/cancel/amend, level-1 financial fields are accessible, and child tables inherit access from their parents. Logix branch hooks explicitly bypass Administrator. |
+| LOGIX-016 | Package Logix Naming Series with the app | High | Done | Eight numbered DocTypes use native `naming_series:` fields with app-managed defaults; patch `v1_0_4_add_logix_naming_series` backfills existing records without renaming documents or resetting counters. |
+| LOGIX-017 | Restrict Job creation to submitted Estimations | Critical | Done | Job's Estimation link and Fetch From dialog show only submitted, unused Estimations; server validation rejects draft, cancelled, mismatched-customer, or already-used Estimations. |
+| LOGIX-018 | Add Create Job action to submitted Estimation | High | Done | A submitted Estimation without a downstream Job provides **Create → Job**, opening a mapped unsaved Job for review. |
+| LOGIX-019 | Add Fetch From Estimation to Job | High | Done | A draft Job provides **Fetch From → Estimation** and maps the selected submitted Estimation through the same permission-checked server method. |
 
 ## Production verification checklist
 
@@ -35,15 +40,59 @@ Status definitions: **Done**, **In Progress**, **Ready for Production Verificati
 - [ ] Confirm visibility and branch isolation as a normal Logix user.
 - [ ] Create a Rate Card and verify an Estimation calculation.
 - [ ] Verify Manual pricing is allowed or blocked according to Logix Settings.
+- [ ] Confirm Administrator has full access to Logix City, Logix Load Type, and all other standalone Logix DocTypes.
+- [ ] Confirm the eight Logix transaction DocTypes appear in Document Naming Settings with the packaged defaults.
+- [ ] Confirm draft Estimations do not appear in the Job Estimation link or Fetch From dialog.
+- [ ] From a submitted Estimation, use **Create → Job** and verify all mapped values.
+- [ ] From a draft Job, use **Fetch From → Estimation** and verify all mapped values.
+- [ ] Confirm a draft, cancelled, or already-used Estimation is rejected server-side during Job save.
 - [ ] Run `bench --site <production-site> run-tests --app logix` in an approved non-live test environment.
 
 ## Verification evidence
 
 - Local migration: passing.
 - Asset build: passing.
-- Logix automated suite: 4 tests passing.
+- Administrator permissions: 14 standalone DocTypes verified in live metadata on `logix.localhost`.
+- Naming Series defaults: all 8 recognized by Frappe after migration on `logix.localhost`.
+- Naming Series upgrade patch: executed successfully on `logix.localhost`.
+- Job workflow test module: 3 tests passing, including draft rejection and submitted Estimation mapping.
+- Python compilation, JavaScript syntax checks, JSON parsing, and `git diff --check`: passing.
 - Workspace metadata: public `1`, hidden `0`, module `Logix`.
 - Workspace content: 30 links and 4 shortcuts.
+
+## Current change details
+
+### Administrator permissions
+
+- Added explicit full Administrator permission rows to every standalone Logix DocType.
+- Enabled create/delete/import/export/report/share/print/email where supported.
+- Enabled submit/cancel/amend for submittable Logix DocTypes.
+- Added level-1 read/write access for Estimation and Job financial fields.
+- Kept Logix Settings within Frappe's Single DocType restrictions.
+- Made the branch permission bypass for the built-in Administrator account explicit.
+
+### Naming Series
+
+| DocType | Default series |
+|---|---|
+| Logix Estimation | `EST-.YYYY.-` |
+| Logix Job | `JOB-.YYYY.-` |
+| Logix Shipment | `SHP-.YYYY.-` |
+| Logix Shipment Order | `SO-.YYYY.-` |
+| Logix Trip | `TRIP-.YYYY.-` |
+| Logix Handover | `HND-` |
+| Logix Shipment Leg | `LEG-` |
+| Logix Transport Rate Card | `TRC-` |
+
+### Estimation-to-Job workflow
+
+- Added a submitted-only query for the Job Estimation link.
+- Added **Create → Job** to submitted Estimations that do not already have a downstream Job.
+- Added **Fetch From → Estimation** to draft Jobs.
+- Added a shared server-side mapper used by both actions.
+- Added server-side eligibility checks so UI filters cannot be bypassed.
+- Retained the existing direct creation API while applying the same submitted-only checks and mapping logic.
+- Added regression tests for draft rejection and submitted Estimation mapping.
 
 ## Maintenance rules
 

@@ -14,5 +14,18 @@ frappe.ui.form.on("Logix Estimation", {
 				});
 			});
 		}
+
+		if (frm.doc.docstatus === 1 && !frm.doc.downstream_job) {
+			frm.add_custom_button(
+				__("Job"),
+				() => {
+					frappe.model.open_mapped_doc({
+						method: "logix.api.make_job",
+						frm,
+					});
+				},
+				__("Create")
+			);
+		}
 	},
 });

@@ -28,8 +28,18 @@ class LogixJob(Document):
 		if settings.disallow_job_without_estimation and not self.estimation:
 			frappe.throw(_("An eligible Estimation is required for this Job."))
 		if self.estimation:
-			estimation = frappe.db.get_value("Logix Estimation", self.estimation, ["customer", "docstatus"], as_dict=True)
-			if not estimation or estimation.customer != self.customer or estimation.docstatus == 2:
+			estimation = frappe.db.get_value(
+				"Logix Estimation",
+				self.estimation,
+				["customer", "docstatus", "downstream_job"],
+				as_dict=True,
+			)
+			if (
+				not estimation
+				or estimation.customer != self.customer
+				or estimation.docstatus != 1
+				or (estimation.downstream_job and estimation.downstream_job != self.name)
+			):
 				frappe.throw(_("The selected Estimation is not eligible for this Job."))
 
 	def _validate_controlled_closure(self):

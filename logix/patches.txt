@@ -8,3 +8,4 @@ logix.patches.v1_0_3_normalize_estimation_measurements
 logix.patches.v1_0_0_create_logix_roles_and_fields
 logix.patches.v1_0_1_create_workspace_and_permissions
 logix.patches.v1_0_2_add_branch_to_user
+logix.patches.v1_0_4_add_logix_naming_series
