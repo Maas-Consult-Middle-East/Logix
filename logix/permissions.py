@@ -6,6 +6,9 @@ CROSS_BRANCH_ROLES = {"System Manager", "Logix Manager"}
 
 def allowed_branches(user=None):
 	user = user or frappe.session.user
+	# Administrator must never be restricted by Logix's branch-level hooks.
+	if user == "Administrator":
+		return None
 	if CROSS_BRANCH_ROLES.intersection(frappe.get_roles(user)):
 		return None
 	branches = set(frappe.get_all("User Permission", filters={"user": user, "allow": "Branch"}, pluck="for_value"))

@@ -35,8 +35,9 @@ Estimation requirement and cost visibility, rate-card/manual pricing, capacity b
 - `logix.patches.v1_0_0_create_logix_roles_and_fields`
 - `logix.patches.v1_0_1_create_workspace_and_permissions`
 - `logix.patches.v1_0_2_add_branch_to_user` — adds `User.logix_branch` and makes it an accepted source for branch-scoped access alongside native User Permissions.
+- `logix.patches.v1_0_3_normalize_estimation_measurements` — safely normalizes legacy Estimation weight and CBM text before numeric schema conversion.
 
-Both are registered under `post_model_sync` and executed successfully on 2026-08-10.
+Patches are registered in `patches.txt`; measurement normalization runs before model synchronization and the remaining patches run afterward.
 
 ## APIs
 
@@ -52,7 +53,7 @@ Run `bench --site logix.localhost execute logix.logix.scripts.seed_demo_data.exe
 
 ## Test status
 
-`bench --site logix.localhost run-tests --app logix`: 3 tests passing. Current coverage includes estimation profit/status and the configurable Job estimation gate. Migration passes.
+`bench --site logix.localhost run-tests --app logix`: 4 tests passing. Current coverage includes estimation profit/status, Rate Card calculation, and the configurable Job estimation gate. Migration passes.
 
 ## Pending phases / known gaps
 
