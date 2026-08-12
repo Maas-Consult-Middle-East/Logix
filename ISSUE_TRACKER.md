@@ -23,10 +23,11 @@ Status definitions: **Done**, **In Progress**, **Ready for Production Verificati
 | LOGIX-013 | Verify the Workspace on the production site | Critical | Ready for Production Verification | Updated app code is deployed; migrate/cache clear/restart complete; a System Manager and one Logix role can open the Workspace. |
 | LOGIX-014 | Expand Estimation pricing regression coverage | Medium | Backlog | Automated tests cover customer/generic precedence, missing cards, disabled/expired cards, manual pricing disabled, round/return rates, and Job mapping. |
 | LOGIX-015 | Give Administrator explicit full access to every Logix DocType | Critical | Done | All 14 standalone Logix DocTypes contain an explicit Administrator permission row; transaction DocTypes grant submit/cancel/amend, level-1 financial fields are accessible, and child tables inherit access from their parents. Logix branch hooks explicitly bypass Administrator. |
-| LOGIX-016 | Package Logix Naming Series with the app | High | Done | Eight numbered DocTypes use native `naming_series:` fields with app-managed defaults; patch `v1_0_4_add_logix_naming_series` backfills existing records without renaming documents or resetting counters. |
+| LOGIX-016 | Package Logix Naming Series with the app | High | Done | Eight numbered DocTypes use native `naming_series:` fields with app-managed defaults; patch `v1_0_4_add_logix_naming_series` backfills existing records, and `v1_0_5_sync_logix_naming_counters` initializes native counters from the highest existing document suffix to prevent restarts and duplicate names. |
 | LOGIX-017 | Restrict Job creation to submitted Estimations | Critical | Done | Job's Estimation link and Fetch From dialog show only submitted, unused Estimations; server validation rejects draft, cancelled, mismatched-customer, or already-used Estimations. |
 | LOGIX-018 | Add Create Job action to submitted Estimation | High | Done | A submitted Estimation without a downstream Job provides **Create → Job**, opening a mapped unsaved Job for review. |
 | LOGIX-019 | Add Fetch From Estimation to Job | High | Done | A draft Job provides **Fetch From → Estimation** and maps the selected submitted Estimation through the same permission-checked server method. |
+| LOGIX-020 | Name City and Load Type masters by their title fields | High | Done | New Logix City records use `city_name`, new Logix Load Type records use `load_type_name`, both fields are unique, and patch `v1_0_6_name_logix_masters_by_title` renames legacy hash-named records while updating links. |
 
 ## Production verification checklist
 
@@ -55,6 +56,7 @@ Status definitions: **Done**, **In Progress**, **Ready for Production Verificati
 - Administrator permissions: 14 standalone DocTypes verified in live metadata on `logix.localhost`.
 - Naming Series defaults: all 8 recognized by Frappe after migration on `logix.localhost`.
 - Naming Series upgrade patch: executed successfully on `logix.localhost`.
+- Naming counter migration: native counter keys synchronized with the highest existing Logix document numbers.
 - Job workflow test module: 3 tests passing, including draft rejection and submitted Estimation mapping.
 - Python compilation, JavaScript syntax checks, JSON parsing, and `git diff --check`: passing.
 - Workspace metadata: public `1`, hidden `0`, module `Logix`.
@@ -93,6 +95,19 @@ Status definitions: **Done**, **In Progress**, **Ready for Production Verificati
 - Added server-side eligibility checks so UI filters cannot be bypassed.
 - Retained the existing direct creation API while applying the same submitted-only checks and mapping logic.
 - Added regression tests for draft rejection and submitted Estimation mapping.
+
+### Naming Series counter repair
+
+- Fixed upgrades from the original `format:` naming implementation, which stored Logix sequence progress under an empty counter key.
+- Added patch `v1_0_5_sync_logix_naming_counters` to create the correct evaluated counter keys, such as `EST-2026-` and `JOB-2026-`.
+- Counter synchronization only moves a counter forward and never renames existing documents or reduces an existing counter.
+
+### Master naming
+
+- Configured Logix City with `autoname: field:city_name`.
+- Configured Logix Load Type with `autoname: field:load_type_name`.
+- Made both naming fields unique and enabled controlled renaming.
+- Added patch `v1_0_6_name_logix_masters_by_title` to replace legacy hash names and update linked records through Frappe's rename mechanism.
 
 ## Maintenance rules
 

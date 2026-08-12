@@ -9,3 +9,5 @@ logix.patches.v1_0_0_create_logix_roles_and_fields
 logix.patches.v1_0_1_create_workspace_and_permissions
 logix.patches.v1_0_2_add_branch_to_user
 logix.patches.v1_0_4_add_logix_naming_series
+logix.patches.v1_0_5_sync_logix_naming_counters
+logix.patches.v1_0_6_name_logix_masters_by_title
