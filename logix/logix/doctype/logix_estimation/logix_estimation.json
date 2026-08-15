@@ -15,6 +15,12 @@
   "load_type",
     "base_weight",
     "cbm",
+    "vehicle_capacity_section",
+    "weight_utilization_percent",
+    "volume_utilization_percent",
+    "loading_percentage",
+    "capacity_basis",
+    "capacity_visualization",
     "extra_stops",
     "trip_pricing",
     "status",
@@ -152,6 +158,41 @@
       "fieldtype": "Float",
       "label": "CBM",
       "non_negative": 1
+    },
+    {
+      "fieldname": "vehicle_capacity_section",
+      "fieldtype": "Section Break",
+      "label": "Vehicle Capacity"
+    },
+    {
+      "fieldname": "weight_utilization_percent",
+      "fieldtype": "Percent",
+      "label": "Weight Utilization",
+      "read_only": 1
+    },
+    {
+      "fieldname": "volume_utilization_percent",
+      "fieldtype": "Percent",
+      "label": "Volume Utilization",
+      "read_only": 1
+    },
+    {
+      "fieldname": "loading_percentage",
+      "fieldtype": "Percent",
+      "in_list_view": 1,
+      "label": "Vehicle Loaded",
+      "read_only": 1
+    },
+    {
+      "fieldname": "capacity_basis",
+      "fieldtype": "Data",
+      "label": "Capacity Limited By",
+      "read_only": 1
+    },
+    {
+      "fieldname": "capacity_visualization",
+      "fieldtype": "HTML",
+      "label": "Lorry Load Visualization"
     },
     {
       "default": "0",

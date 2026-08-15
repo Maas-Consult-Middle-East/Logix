@@ -14,7 +14,7 @@ Logix is an installable Frappe/ERPNext v15 app. ERPNext owns accounting and the 
 
 - Foundation: Logix Settings, City, Route, Load Type, Vehicle Type, roles, ERPNext custom fields, branch permission hooks, and a version-controlled Logix Workspace with operational shortcuts and grouped Commercial, Operations, Fleet, Masters, Billing, and Setup cards.
 - Commercial: Logix Estimation, Transport Rate Card, Logix Job, customer-default inheritance, estimation requirement/acceptance/locking, rate precedence and weight/CBM/stop/minimum/return pricing service.
-- Estimation pricing: route, vehicle/load type, numeric weight/CBM, extra stops, and trip-pricing inputs support server-side Rate Card calculation or explicitly permitted Manual pricing. Applied rate card and currency remain traceable on the Estimation.
+- Estimation pricing and capacity: route, vehicle/load type, numeric weight/CBM, extra stops, and trip-pricing inputs support server-side Rate Card calculation or explicitly permitted Manual pricing. Estimation also calculates the tighter of weight/CBM vehicle utilization and renders a red-used/green-available lorry visualization. Applied rate card and currency remain traceable on the Estimation.
 - Shipment: Shipment Order, Shipment, Shipment Stop, Shipment Leg, Trip Shipment Allocation, Shipment Event, Handover, and POD.
 - Trips (foundation): Logix Trip Plan and Logix Trip with mixed resource modes, owned/vendor resources, split/shared allocations, source-plan and backhaul linkage, mapped Shipment-to-plan/trip creation paths, Trip-to-POD creation, and verified POD-to-Sales-Invoice creation.
 - Security/services: controlled shipment transitions, audited overrides, random public tracking tokens, expiry/revocation checks, allowlisted guest response.
@@ -57,7 +57,7 @@ Run `bench --site logix.localhost execute logix.logix.scripts.seed_demo_data.exe
 
 ## Test status
 
-`bench --site logix.localhost run-tests --app logix`: 12 tests passing. Current coverage includes estimation profit/status, Rate Card calculation, the configurable Job estimation gate, downstream Shipment creation, Shipment/Trip Plan/Trip mappings, Trip-to-POD creation/submission, and POD-to-Sales-Invoice mapping. Migration passes.
+`bench --site logix.localhost run-tests --app logix`: 13 tests passing. Current coverage includes estimation profit/status, Rate Card calculation, weight/CBM vehicle utilization and capacity blocking, the configurable Job estimation gate, downstream Shipment creation, Shipment/Trip Plan/Trip mappings, Trip-to-POD creation/submission, and POD-to-Sales-Invoice mapping. Migration passes.
 
 ## Pending phases / known gaps
 

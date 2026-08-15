@@ -10,6 +10,7 @@ from logix.services.pricing import calculate_transport_price
 class LogixEstimation(Document):
     def validate(self):
         self.validate_transport_inputs()
+        self.calculate_vehicle_utilization()
         self.calculate_selling_price()
 
         revenue = flt(self.estimated_revenue)
@@ -67,6 +68,55 @@ class LogixEstimation(Document):
         self.rate_card = result.rate_card
         self.estimated_revenue = result.amount
         self.currency = result.currency
+
+    def get_vehicle_utilization(self):
+        capacities = frappe.db.get_value(
+            "Logix Vehicle Type",
+            self.vehicle_type,
+            ["weight_capacity_kg", "volume_capacity_cbm"],
+            as_dict=True,
+        ) or frappe._dict()
+        weight_capacity = flt(capacities.weight_capacity_kg)
+        volume_capacity = flt(capacities.volume_capacity_cbm)
+        weight_percent = flt(self.base_weight) / weight_capacity * 100 if weight_capacity else 0
+        volume_percent = flt(self.cbm) / volume_capacity * 100 if volume_capacity else 0
+        loading_percentage = max(weight_percent, volume_percent)
+        if not weight_capacity and not volume_capacity:
+            capacity_basis = "Not Configured"
+        elif weight_capacity and (not volume_capacity or weight_percent >= volume_percent):
+            capacity_basis = "Weight"
+        else:
+            capacity_basis = "Volume"
+        return {
+            "weight_utilization_percent": weight_percent,
+            "volume_utilization_percent": volume_percent,
+            "loading_percentage": loading_percentage,
+            "capacity_basis": capacity_basis,
+            "weight_capacity_kg": weight_capacity,
+            "volume_capacity_cbm": volume_capacity,
+        }
+
+    def calculate_vehicle_utilization(self):
+        utilization = self.get_vehicle_utilization()
+        self.weight_utilization_percent = utilization["weight_utilization_percent"]
+        self.volume_utilization_percent = utilization["volume_utilization_percent"]
+        self.loading_percentage = utilization["loading_percentage"]
+        self.capacity_basis = utilization["capacity_basis"]
+
+        if self.loading_percentage <= 100:
+            return
+        behavior = frappe.db.get_single_value("Logix Settings", "vehicle_capacity_behavior") or "Warn"
+        message = _("Vehicle capacity is exceeded: {0} loaded, limited by {1}.").format(
+            frappe.format_value(self.loading_percentage, {"fieldtype": "Percent"}), self.capacity_basis
+        )
+        if behavior == "Block":
+            frappe.throw(message)
+        if behavior == "Warn":
+            frappe.msgprint(message, title=_("Vehicle Over Capacity"), indicator="orange")
+
+    @frappe.whitelist()
+    def preview_vehicle_capacity(self):
+        return self.get_vehicle_utilization()
 
     @frappe.whitelist()
     def preview_rate_card(self):

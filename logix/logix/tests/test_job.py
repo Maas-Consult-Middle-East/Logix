@@ -33,6 +33,11 @@ class TestLogixJob(unittest.TestCase):
 		self.vehicle_type = self._master(
 			"Logix Vehicle Type", {"vehicle_type_name": "Logix Job Test Vehicle Type"}
 		)
+		frappe.db.set_value(
+			"Logix Vehicle Type",
+			self.vehicle_type,
+			{"weight_capacity_kg": 10000, "volume_capacity_cbm": 40},
+		)
 		self.load_type = self._master("Logix Load Type", {"load_type_name": "Logix Job Test Load Type"})
 
 	def tearDown(self):
@@ -105,6 +110,27 @@ class TestLogixJob(unittest.TestCase):
 			make_job(estimation.name)
 		with self.assertRaises(ValidationError):
 			self._job(estimation.name).insert()
+
+	def test_estimation_vehicle_capacity_utilization(self):
+		estimation = self._estimation()
+		estimation.cbm = 20
+		estimation.save()
+		self.assertEqual(estimation.weight_utilization_percent, 10)
+		self.assertEqual(estimation.volume_utilization_percent, 50)
+		self.assertEqual(estimation.loading_percentage, 50)
+		self.assertEqual(estimation.capacity_basis, "Volume")
+
+		estimation.base_weight = 10000
+		estimation.save()
+		self.assertEqual(estimation.loading_percentage, 100)
+		self.assertEqual(estimation.capacity_basis, "Weight")
+
+		settings = frappe.get_single("Logix Settings")
+		settings.vehicle_capacity_behavior = "Block"
+		settings.save()
+		estimation.base_weight = 11000
+		with self.assertRaises(ValidationError):
+			estimation.save()
 
 	def test_submitted_estimation_maps_to_job(self):
 		estimation = self._estimation().submit()

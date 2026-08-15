@@ -32,6 +32,7 @@ Status definitions: **Done**, **In Progress**, **Ready for Production Verificati
 | LOGIX-022 | Add Trip Plan and Shipment-to-Trip planning actions | High | Ready for Production Verification | Trip Plan is branch-scoped and available under Workspace Operations; a Shipment provides **Create → Trip Plan** and **Create → Trip** using its remaining cargo and stop sequence; a Trip Plan provides **Create → Trip**, preserving resource, schedule, allocation, and source-plan details. |
 | LOGIX-023 | Create POD from Trip | High | Ready for Production Verification | A saved, non-cancelled Trip provides **Create → POD**; multi-shipment Trips prompt for the Shipment, the POD is prefilled from its active allocation, and server validation enforces Trip/Shipment/Branch integrity, evidence on submit, quantity limits, and one active POD per Trip/Shipment. |
 | LOGIX-024 | Create Sales Invoice from POD | High | Ready for Production Verification | A verified, submitted POD provides **Create → Sales Invoice** for users with invoice-create permission; the draft uses the configured Transport Service Item and Job Agreed Revenue, retains POD/Trip/Shipment/Job links, calculates totals, and blocks duplicate active invoices. |
+| LOGIX-025 | Visualize Estimation vehicle loading | High | Ready for Production Verification | Estimation calculates weight and CBM utilization from the selected Vehicle Type, uses the higher percentage as effective loading, and renders a responsive lorry whose used portion is red and available portion green; over-capacity behavior follows Logix Settings. |
 
 ## Production verification checklist
 
@@ -59,6 +60,7 @@ Status definitions: **Done**, **In Progress**, **Ready for Production Verificati
 - [ ] From a saved Trip Plan, use **Create → Trip** and verify the Trip Plan link, resources, schedule, and allocations are preserved.
 - [ ] From a saved Trip, use **Create → POD**; verify single-shipment prefilling, multi-shipment selection, signature/attachment submission, and duplicate prevention.
 - [ ] Configure the Transport Service Item, then from a verified POD use **Create → Sales Invoice** and verify the customer, service item, Job revenue, total, and Logix source links.
+- [ ] On Estimation, verify the lorry is half red/half green at 50%, fully red at 100%, identifies whether weight or CBM is limiting, and applies Block/Warn/Allow above capacity.
 - [ ] Run `bench --site <production-site> run-tests --app logix` in an approved non-live test environment.
 
 ## Verification evidence
@@ -69,8 +71,8 @@ Status definitions: **Done**, **In Progress**, **Ready for Production Verificati
 - Naming Series defaults: all 10 defined with app-managed defaults.
 - Naming Series upgrade patch: executed successfully on `logix.localhost`.
 - Naming counter migration: native counter keys synchronized with the highest existing Logix document numbers.
-- Job workflow test module: 9 tests passing, covering Estimation eligibility/mapping, downstream Shipment creation, all three Trip planning paths, Trip-to-POD creation/submission, and POD-to-Sales-Invoice mapping.
-- Full Logix suite: 12 tests passing after local migration.
+- Job workflow test module: 10 tests passing, covering Estimation eligibility/mapping, vehicle capacity utilization, downstream Shipment creation, all three Trip planning paths, Trip-to-POD creation/submission, and POD-to-Sales-Invoice mapping.
+- Full Logix suite: 13 tests passing after local migration.
 - Downstream creation regression coverage maps Job to Shipment Order/Shipment and Shipment Order to Shipment, including source links, shared fields, cargo values, load type, and route stops.
 - Python compilation, JavaScript syntax checks, JSON parsing, and `git diff --check`: passing.
 - Workspace metadata: public `1`, hidden `0`, module `Logix`.
@@ -155,6 +157,15 @@ Status definitions: **Done**, **In Progress**, **Ready for Production Verificati
 - Added read-only POD, Trip, Shipment, and Job links to Sales Invoice through upgrade patch `v1_0_7_add_sales_invoice_logix_links`.
 - Server validation requires a verified POD, an enabled sales Item, positive Job revenue, a default Company, source read access, and Sales Invoice create permission.
 - A second non-cancelled Sales Invoice cannot be created from the same POD.
+
+### Estimation vehicle capacity visualization
+
+- Added read-only weight, volume, effective loading, and limiting-dimension fields to Estimation.
+- Effective loading is the higher of weight utilization and CBM utilization against the selected Vehicle Type capacities.
+- Added a responsive code-native lorry graphic: the loaded percentage is red and the remaining percentage is green, with separate weight and volume indicators.
+- At 100% the lorry body is fully red; percentages above 100% remain fully red and show an over-capacity status.
+- Activated the Logix Settings Vehicle Capacity Behavior: `Block` rejects over-capacity Estimations, `Warn` displays a warning, and `Allow` permits them silently.
+- Automated tests cover 50% volume loading, 100% weight loading, limiting-dimension selection, and blocking above capacity. Live browser visual QA remains in the production verification checklist.
 
 ## Maintenance rules
 
