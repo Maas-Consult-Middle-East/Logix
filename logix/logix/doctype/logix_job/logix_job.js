@@ -12,6 +12,30 @@ frappe.ui.form.on("Logix Job", {
 	},
 
 	refresh(frm) {
+		if (!frm.is_new() && frm.doc.docstatus !== 2) {
+			frm.add_custom_button(
+				__("Shipment Order"),
+				() => {
+					frappe.model.open_mapped_doc({
+						method: "logix.api.make_shipment_order",
+						frm,
+					});
+				},
+				__("Create")
+			);
+			frm.add_custom_button(
+				__("Shipment"),
+				() => {
+					frappe.model.open_mapped_doc({
+						method: "logix.api.make_shipment",
+						frm,
+					});
+				},
+				__("Create")
+			);
+			frm.page.set_inner_btn_group_as_primary(__("Create"));
+		}
+
 		if (frm.doc.docstatus !== 0) {
 			return;
 		}

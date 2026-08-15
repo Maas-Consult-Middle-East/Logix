@@ -16,7 +16,9 @@ permission_query_conditions = {
 	"Logix Job": "logix.permissions.job_query",
 	"Logix Shipment Order": "logix.permissions.shipment_order_query",
 	"Logix Shipment": "logix.permissions.shipment_query",
+	"Logix Trip Plan": "logix.permissions.trip_plan_query",
 	"Logix Trip": "logix.permissions.trip_query",
+	"Logix POD": "logix.permissions.pod_query",
 }
 
 has_permission = {
@@ -24,7 +26,9 @@ has_permission = {
 	"Logix Job": "logix.permissions.has_branch_permission",
 	"Logix Shipment Order": "logix.permissions.has_branch_permission",
 	"Logix Shipment": "logix.permissions.has_branch_permission",
+	"Logix Trip Plan": "logix.permissions.has_branch_permission",
 	"Logix Trip": "logix.permissions.has_branch_permission",
+	"Logix POD": "logix.permissions.has_branch_permission",
 }
 
 # Apps

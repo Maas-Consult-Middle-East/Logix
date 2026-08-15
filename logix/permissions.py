@@ -44,8 +44,16 @@ def shipment_query(user=None):
 	return get_branch_query_conditions("Logix Shipment", user)
 
 
+def trip_plan_query(user=None):
+	return get_branch_query_conditions("Logix Trip Plan", user)
+
+
 def trip_query(user=None):
 	return get_branch_query_conditions("Logix Trip", user)
+
+
+def pod_query(user=None):
+	return get_branch_query_conditions("Logix POD", user)
 
 
 def has_branch_permission(doc, user=None, permission_type=None):

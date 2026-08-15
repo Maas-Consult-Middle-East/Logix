@@ -1,0 +1,164 @@
+{
+ "allow_import": 1,
+ "autoname": "naming_series:",
+ "doctype": "DocType",
+ "fields": [
+  {
+   "default": "POD-.YYYY.-",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Naming Series",
+   "options": "POD-.YYYY.-",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "trip",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Trip",
+   "options": "Logix Trip",
+   "reqd": 1
+  },
+  {
+   "fieldname": "shipment",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Shipment",
+   "options": "Logix Shipment",
+   "reqd": 1
+  },
+  {
+   "fieldname": "job",
+   "fieldtype": "Link",
+   "label": "Job",
+   "options": "Logix Job",
+   "read_only": 1
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Customer",
+   "options": "Customer",
+   "read_only": 1
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Branch",
+   "options": "Branch",
+   "reqd": 1
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Draft\nVerified\nCancelled",
+   "read_only": 1
+  },
+  {
+   "default": "Now",
+   "fieldname": "delivery_time",
+   "fieldtype": "Datetime",
+   "label": "Delivery Time",
+   "reqd": 1
+  },
+  {
+   "fieldname": "received_by",
+   "fieldtype": "Data",
+   "label": "Received By",
+   "reqd": 1
+  },
+  {
+   "fieldname": "receiver_phone",
+   "fieldtype": "Data",
+   "label": "Receiver Phone"
+  },
+  {
+   "default": "Delivered",
+   "fieldname": "delivery_status",
+   "fieldtype": "Select",
+   "label": "Delivery Status",
+   "options": "Delivered\nPartially Delivered\nRejected",
+   "reqd": 1
+  },
+  {
+   "fieldname": "delivered_quantity",
+   "fieldtype": "Float",
+   "label": "Delivered Quantity"
+  },
+  {
+   "fieldname": "signature",
+   "fieldtype": "Attach Image",
+   "label": "Receiver Signature"
+  },
+  {
+   "fieldname": "proof_attachment",
+   "fieldtype": "Attach",
+   "label": "Proof Attachment"
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks"
+  }
+ ],
+ "is_submittable": 1,
+ "module": "Logix",
+ "name": "Logix POD",
+ "naming_rule": "By \"Naming Series\" field",
+ "permissions": [
+  {
+   "amend": 1,
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "import": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Administrator",
+   "select": 1,
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "cancel": 1,
+   "create": 1,
+   "read": 1,
+   "role": "System Manager",
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "cancel": 1,
+   "create": 1,
+   "read": 1,
+   "role": "Logix Manager",
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "role": "Logix Operations User",
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "role": "Logix Driver",
+   "write": 1
+  }
+ ],
+ "search_fields": "trip,shipment,customer,received_by",
+ "track_changes": 1
+}

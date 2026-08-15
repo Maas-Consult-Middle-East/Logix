@@ -3,7 +3,17 @@ import unittest
 import frappe
 from frappe.exceptions import ValidationError
 
-from logix.api import make_job
+from logix.api import (
+	make_job,
+	make_pod,
+	make_sales_invoice_from_pod,
+	make_shipment,
+	make_shipment_from_order,
+	make_shipment_order,
+	make_trip_from_plan,
+	make_trip_from_shipment,
+	make_trip_plan,
+)
 
 
 class TestLogixJob(unittest.TestCase):
@@ -31,7 +41,8 @@ class TestLogixJob(unittest.TestCase):
 	def _job(self, estimation=None):
 		return frappe.get_doc({
 			"doctype": "Logix Job", "customer": "Logix Job Test Customer", "branch": "Logix Test Branch",
-			"from_city": self.origin, "to_city": self.destination, "estimation": estimation,
+			"from_city": self.origin, "to_city": self.destination, "load_type": self.load_type,
+			"estimation": estimation,
 		})
 
 	def _master(self, doctype, values):
@@ -55,6 +66,26 @@ class TestLogixJob(unittest.TestCase):
 				"load_type": self.load_type,
 				"base_weight": 1000,
 				"pricing_source": "Manual",
+			}
+		).insert()
+
+	def _shipment(self):
+		job = self._job().insert()
+		return frappe.get_doc(
+			{
+				"doctype": "Logix Shipment",
+				"job": job.name,
+				"customer": job.customer,
+				"branch": job.branch,
+				"load_type": job.load_type,
+				"total_quantity": 12,
+				"weight_kg": 750,
+				"cbm": 4,
+				"pallets": 3,
+				"stops": [
+					{"sequence": 1, "stop_type": "Pickup", "city": job.from_city},
+					{"sequence": 2, "stop_type": "Delivery", "city": job.to_city},
+				],
 			}
 		).insert()
 
@@ -90,3 +121,151 @@ class TestLogixJob(unittest.TestCase):
 		self.assertEqual(job.agreed_revenue, estimation.estimated_revenue)
 		self.assertEqual(job.estimated_cost, estimation.estimated_direct_cost)
 		self.assertEqual(job.status, "Draft")
+
+	def test_job_maps_to_shipment_order_and_shipment(self):
+		job = self._job().insert()
+
+		order = make_shipment_order(job.name)
+		self.assertTrue(order.is_new())
+		self.assertEqual(order.job, job.name)
+		self.assertEqual(order.customer, job.customer)
+		self.assertEqual(order.branch, job.branch)
+		self.assertEqual(order.status, "Draft")
+
+		shipment = make_shipment(job.name)
+		self.assertTrue(shipment.is_new())
+		self.assertEqual(shipment.job, job.name)
+		self.assertEqual(shipment.customer, job.customer)
+		self.assertEqual(shipment.branch, job.branch)
+		self.assertEqual(shipment.load_type, job.load_type)
+		self.assertEqual(
+			[(row.sequence, row.stop_type, row.city) for row in shipment.stops],
+			[(1, "Pickup", job.from_city), (2, "Delivery", job.to_city)],
+		)
+
+	def test_shipment_order_maps_to_shipment(self):
+		job = self._job().insert()
+		order = frappe.get_doc(
+			{
+				"doctype": "Logix Shipment Order",
+				"job": job.name,
+				"customer": job.customer,
+				"branch": job.branch,
+				"quantity": 12,
+				"weight_kg": 750,
+				"cbm": 4,
+				"pallets": 3,
+			}
+		).insert()
+
+		shipment = make_shipment_from_order(order.name)
+		self.assertTrue(shipment.is_new())
+		self.assertEqual(shipment.shipment_order, order.name)
+		self.assertEqual(shipment.job, job.name)
+		self.assertEqual(shipment.total_quantity, order.quantity)
+		self.assertEqual(shipment.weight_kg, order.weight_kg)
+		self.assertEqual(shipment.cbm, order.cbm)
+		self.assertEqual(shipment.pallets, order.pallets)
+		self.assertEqual(shipment.load_type, job.load_type)
+		self.assertEqual(
+			[(row.sequence, row.stop_type, row.city) for row in shipment.stops],
+			[(1, "Pickup", job.from_city), (2, "Delivery", job.to_city)],
+		)
+
+	def test_shipment_maps_to_trip_plan_and_trip(self):
+		shipment = self._shipment()
+
+		for target in (make_trip_plan(shipment.name), make_trip_from_shipment(shipment.name)):
+			self.assertTrue(target.is_new())
+			self.assertEqual(target.branch, shipment.branch)
+			self.assertEqual(len(target.allocations), 1)
+			allocation = target.allocations[0]
+			self.assertEqual(allocation.shipment, shipment.name)
+			self.assertEqual(allocation.job, shipment.job)
+			self.assertEqual(allocation.customer, shipment.customer)
+			self.assertEqual(allocation.allocated_quantity, shipment.total_quantity)
+			self.assertEqual(allocation.weight_kg, shipment.weight_kg)
+			self.assertEqual(allocation.cbm, shipment.cbm)
+			self.assertEqual(allocation.pallets, shipment.pallets)
+			self.assertEqual(allocation.pickup_stop_sequence, 1)
+			self.assertEqual(allocation.delivery_stop_sequence, 2)
+
+	def test_trip_plan_maps_to_linked_trip(self):
+		shipment = self._shipment()
+		trip_plan = make_trip_plan(shipment.name)
+		trip_plan.resource_mode = "Company Owned"
+		trip_plan.insert()
+
+		trip = make_trip_from_plan(trip_plan.name)
+		self.assertTrue(trip.is_new())
+		self.assertEqual(trip.trip_plan, trip_plan.name)
+		self.assertEqual(trip.branch, trip_plan.branch)
+		self.assertEqual(trip.resource_mode, trip_plan.resource_mode)
+		self.assertEqual(len(trip.allocations), 1)
+		self.assertEqual(trip.allocations[0].shipment, shipment.name)
+		self.assertEqual(trip.allocations[0].allocated_quantity, shipment.total_quantity)
+
+	def test_trip_maps_to_pod(self):
+		shipment = self._shipment()
+		trip = make_trip_from_shipment(shipment.name)
+		trip.resource_mode = "Company Owned"
+		trip.insert()
+
+		pod = make_pod(trip.name, shipment=shipment.name)
+		self.assertTrue(pod.is_new())
+		self.assertEqual(pod.trip, trip.name)
+		self.assertEqual(pod.shipment, shipment.name)
+		self.assertEqual(pod.job, shipment.job)
+		self.assertEqual(pod.customer, shipment.customer)
+		self.assertEqual(pod.branch, trip.branch)
+		self.assertEqual(pod.delivered_quantity, shipment.total_quantity)
+
+		pod.received_by = "Logix Test Receiver"
+		pod.proof_attachment = "/files/logix-test-pod.jpg"
+		pod.insert().submit()
+		self.assertEqual(pod.status, "Verified")
+		with self.assertRaises(ValidationError):
+			make_pod(trip.name, shipment=shipment.name)
+
+	def test_verified_pod_maps_to_sales_invoice(self):
+		shipment = self._shipment()
+		job = frappe.get_doc("Logix Job", shipment.job)
+		job.agreed_revenue = 2500
+		job.save()
+		trip = make_trip_from_shipment(shipment.name)
+		trip.resource_mode = "Company Owned"
+		trip.insert()
+		pod = make_pod(trip.name, shipment=shipment.name)
+		pod.received_by = "Logix Test Receiver"
+		pod.proof_attachment = "/files/logix-test-pod.jpg"
+		pod.insert().submit()
+
+		item_code = "Logix Test Transport Service"
+		if not frappe.db.exists("Item", item_code):
+			frappe.get_doc(
+				{
+					"doctype": "Item",
+					"item_code": item_code,
+					"item_name": item_code,
+					"item_group": frappe.db.get_value("Item Group", {"is_group": 0}),
+					"stock_uom": frappe.db.get_value("UOM", {"enabled": 1}),
+					"is_stock_item": 0,
+					"is_sales_item": 1,
+				}
+			).insert()
+		settings = frappe.get_single("Logix Settings")
+		settings.transport_service_item = item_code
+		settings.save()
+
+		invoice = make_sales_invoice_from_pod(pod.name)
+		self.assertTrue(invoice.is_new())
+		self.assertEqual(invoice.customer, pod.customer)
+		self.assertEqual(invoice.logix_pod, pod.name)
+		self.assertEqual(invoice.logix_trip, pod.trip)
+		self.assertEqual(invoice.logix_shipment, pod.shipment)
+		self.assertEqual(invoice.logix_job, pod.job)
+		self.assertEqual(len(invoice.items), 1)
+		self.assertEqual(invoice.items[0].item_code, item_code)
+		self.assertEqual(invoice.items[0].qty, 1)
+		self.assertEqual(invoice.items[0].rate, job.agreed_revenue)
+		self.assertEqual(invoice.grand_total, job.agreed_revenue)

@@ -15,8 +15,8 @@ Logix is an installable Frappe/ERPNext v15 app. ERPNext owns accounting and the 
 - Foundation: Logix Settings, City, Route, Load Type, Vehicle Type, roles, ERPNext custom fields, branch permission hooks, and a version-controlled Logix Workspace with operational shortcuts and grouped Commercial, Operations, Fleet, Masters, Billing, and Setup cards.
 - Commercial: Logix Estimation, Transport Rate Card, Logix Job, customer-default inheritance, estimation requirement/acceptance/locking, rate precedence and weight/CBM/stop/minimum/return pricing service.
 - Estimation pricing: route, vehicle/load type, numeric weight/CBM, extra stops, and trip-pricing inputs support server-side Rate Card calculation or explicitly permitted Manual pricing. Applied rate card and currency remain traceable on the Estimation.
-- Shipment: Shipment Order, Shipment, Shipment Stop, Shipment Leg, Trip Shipment Allocation, Shipment Event, Handover.
-- Trips (foundation): Logix Trip with mixed resource modes, owned/vendor resources, split/shared allocations, and backhaul linkage.
+- Shipment: Shipment Order, Shipment, Shipment Stop, Shipment Leg, Trip Shipment Allocation, Shipment Event, Handover, and POD.
+- Trips (foundation): Logix Trip Plan and Logix Trip with mixed resource modes, owned/vendor resources, split/shared allocations, source-plan and backhaul linkage, mapped Shipment-to-plan/trip creation paths, Trip-to-POD creation, and verified POD-to-Sales-Invoice creation.
 - Security/services: controlled shipment transitions, audited overrides, random public tracking tokens, expiry/revocation checks, allowlisted guest response.
 
 ## Status lifecycles
@@ -25,6 +25,8 @@ Logix is an installable Frappe/ERPNext v15 app. ERPNext owns accounting and the 
 - Job: Draft → Confirmed → In Progress → Completed; controlled Stopped/Partially Completed/executed-work outcomes require a reason.
 - Shipment: centralized transitions from Draft through planning, pickup, transit/handover, delivery/failure/return.
 - Trip: Draft → Planned → Assigned → Ready → In Progress → Completed/Stopped.
+- Trip Plan: Draft → Planned → Converted/Cancelled.
+- POD: Draft → Verified/Cancelled through submit/cancel lifecycle actions.
 
 ## Configuration
 
@@ -42,6 +44,8 @@ Patches are registered in `patches.txt`; measurement normalization runs before m
 ## APIs
 
 - `logix.api.create_job_from_estimation`
+- `logix.api.make_pod`
+- `logix.api.make_sales_invoice_from_pod`
 - `logix.api.regenerate_tracking_token`
 - `logix.api.public_tracking` (guest-safe allowlist)
 - `logix.services.pricing.calculate_transport_price`
@@ -53,11 +57,11 @@ Run `bench --site logix.localhost execute logix.logix.scripts.seed_demo_data.exe
 
 ## Test status
 
-`bench --site logix.localhost run-tests --app logix`: 4 tests passing. Current coverage includes estimation profit/status, Rate Card calculation, and the configurable Job estimation gate. Migration passes.
+`bench --site logix.localhost run-tests --app logix`: 12 tests passing. Current coverage includes estimation profit/status, Rate Card calculation, the configurable Job estimation gate, downstream Shipment creation, Shipment/Trip Plan/Trip mappings, Trip-to-POD creation/submission, and POD-to-Sales-Invoice mapping. Migration passes.
 
 ## Pending phases / known gaps
 
-Phase 4 is partial. Trip Plan, Docket/Waybills/POD/driver UI, costing, storage, billing assistants, SLA/incidents, Control Tower, recurring Jobs, reports, print formats, Arabic/RTL QA, expanded permissions, concurrency locking, and the remaining acceptance suite are not yet implemented. These must not be represented as production-ready.
+Phase 4 is partial. Docket/Waybills, expanded driver UI, costing, storage, broader billing assistants, SLA/incidents, Control Tower, recurring Jobs, reports, print formats, Arabic/RTL QA, expanded permissions, concurrency locking, and the remaining acceptance suite are not yet implemented. The new POD and POD-invoicing workflows still require production verification and must not yet be represented as production-ready.
 
 ## Upgrade notes
 

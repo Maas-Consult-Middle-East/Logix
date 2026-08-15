@@ -1,6 +1,6 @@
 # Logix Issue Tracker
 
-Last updated: 2026-08-12
+Last updated: 2026-08-15
 
 Status definitions: **Done**, **In Progress**, **Ready for Production Verification**, **Backlog**.
 
@@ -8,7 +8,7 @@ Status definitions: **Done**, **In Progress**, **Ready for Production Verificati
 
 | ID | Issue | Priority | Status | Acceptance criteria |
 |---|---|---:|---|---|
-| LOGIX-001 | Provision the Logix Workspace on every fresh app installation | Critical | Done | `install-app logix` creates the public Workspace, its 30 links, 4 shortcuts, and role access without a manual command. |
+| LOGIX-001 | Provision the Logix Workspace on every fresh app installation | Critical | Done | `install-app logix` creates the public Workspace, its 31 links, 4 shortcuts, and role access without a manual command. |
 | LOGIX-002 | Repair or provision the Workspace on existing installations | Critical | Done | `bench --site <site> migrate` idempotently creates or repairs the Workspace through `after_migrate`. |
 | LOGIX-003 | Make the Workspace visible to production administrators | High | Done | System Manager and all Logix operational roles can see the Workspace; it is public and not hidden. |
 | LOGIX-004 | Prevent unrelated system records from entering Logix fixtures | High | Done | Exports contain only the Logix Workspace, Logix roles, and `logix_*` Custom Fields. |
@@ -22,12 +22,16 @@ Status definitions: **Done**, **In Progress**, **Ready for Production Verificati
 | LOGIX-012 | Improve Apply Rate Card behavior on incomplete forms | Medium | Backlog | Button is disabled or hidden until all matching fields are populated, and incomplete input produces a specific validation message rather than “no rate card.” |
 | LOGIX-013 | Verify the Workspace on the production site | Critical | Ready for Production Verification | Updated app code is deployed; migrate/cache clear/restart complete; a System Manager and one Logix role can open the Workspace. |
 | LOGIX-014 | Expand Estimation pricing regression coverage | Medium | Backlog | Automated tests cover customer/generic precedence, missing cards, disabled/expired cards, manual pricing disabled, round/return rates, and Job mapping. |
-| LOGIX-015 | Give Administrator explicit full access to every Logix DocType | Critical | Done | All 14 standalone Logix DocTypes contain an explicit Administrator permission row; transaction DocTypes grant submit/cancel/amend, level-1 financial fields are accessible, and child tables inherit access from their parents. Logix branch hooks explicitly bypass Administrator. |
-| LOGIX-016 | Package Logix Naming Series with the app | High | Done | Eight numbered DocTypes use native `naming_series:` fields with app-managed defaults; patch `v1_0_4_add_logix_naming_series` backfills existing records, and `v1_0_5_sync_logix_naming_counters` initializes native counters from the highest existing document suffix to prevent restarts and duplicate names. |
+| LOGIX-015 | Give Administrator explicit full access to every Logix DocType | Critical | Done | All 16 standalone Logix DocTypes contain an explicit Administrator permission row; transaction DocTypes grant submit/cancel/amend, level-1 financial fields are accessible, and child tables inherit access from their parents. Logix branch hooks explicitly bypass Administrator. |
+| LOGIX-016 | Package Logix Naming Series with the app | High | Done | Ten numbered DocTypes use native `naming_series:` fields with app-managed defaults; patch `v1_0_4_add_logix_naming_series` backfills the original records, and `v1_0_5_sync_logix_naming_counters` initializes native counters from the highest existing document suffix to prevent restarts and duplicate names. |
 | LOGIX-017 | Restrict Job creation to submitted Estimations | Critical | Done | Job's Estimation link and Fetch From dialog show only submitted, unused Estimations; server validation rejects draft, cancelled, mismatched-customer, or already-used Estimations. |
 | LOGIX-018 | Add Create Job action to submitted Estimation | High | Done | A submitted Estimation without a downstream Job provides **Create → Job**, opening a mapped unsaved Job for review. |
 | LOGIX-019 | Add Fetch From Estimation to Job | High | Done | A draft Job provides **Fetch From → Estimation** and maps the selected submitted Estimation through the same permission-checked server method. |
 | LOGIX-020 | Name City and Load Type masters by their title fields | High | Done | New Logix City records use `city_name`, new Logix Load Type records use `load_type_name`, both fields are unique, and patch `v1_0_6_name_logix_masters_by_title` renames legacy hash-named records while updating links. |
+| LOGIX-021 | Add downstream Create actions to Jobs and Shipment Orders | High | Ready for Production Verification | A saved active Job provides **Create → Shipment Order** and **Create → Shipment**; a saved active Shipment Order provides **Create → Shipment**; each action opens a mapped draft with its source relationship, shared operational fields, and Job route stops prefilled. |
+| LOGIX-022 | Add Trip Plan and Shipment-to-Trip planning actions | High | Ready for Production Verification | Trip Plan is branch-scoped and available under Workspace Operations; a Shipment provides **Create → Trip Plan** and **Create → Trip** using its remaining cargo and stop sequence; a Trip Plan provides **Create → Trip**, preserving resource, schedule, allocation, and source-plan details. |
+| LOGIX-023 | Create POD from Trip | High | Ready for Production Verification | A saved, non-cancelled Trip provides **Create → POD**; multi-shipment Trips prompt for the Shipment, the POD is prefilled from its active allocation, and server validation enforces Trip/Shipment/Branch integrity, evidence on submit, quantity limits, and one active POD per Trip/Shipment. |
+| LOGIX-024 | Create Sales Invoice from POD | High | Ready for Production Verification | A verified, submitted POD provides **Create → Sales Invoice** for users with invoice-create permission; the draft uses the configured Transport Service Item and Job Agreed Revenue, retains POD/Trip/Shipment/Job links, calculates totals, and blocks duplicate active invoices. |
 
 ## Production verification checklist
 
@@ -36,31 +40,41 @@ Status definitions: **Done**, **In Progress**, **Ready for Production Verificati
 - [ ] Run `bench --site <production-site> clear-cache`.
 - [ ] Run `bench restart` using the production process manager.
 - [ ] Confirm Workspace `Logix` exists, is public, and is not hidden.
-- [ ] Confirm the Workspace contains 30 links and 4 shortcuts.
+- [ ] Confirm the Workspace contains 31 links and 4 shortcuts.
 - [ ] Confirm visibility as System Manager.
 - [ ] Confirm visibility and branch isolation as a normal Logix user.
 - [ ] Create a Rate Card and verify an Estimation calculation.
 - [ ] Verify Manual pricing is allowed or blocked according to Logix Settings.
 - [ ] Confirm Administrator has full access to Logix City, Logix Load Type, and all other standalone Logix DocTypes.
-- [ ] Confirm the eight Logix transaction DocTypes appear in Document Naming Settings with the packaged defaults.
+- [ ] Confirm the ten numbered Logix DocTypes appear in Document Naming Settings with the packaged defaults.
 - [ ] Confirm draft Estimations do not appear in the Job Estimation link or Fetch From dialog.
 - [ ] From a submitted Estimation, use **Create → Job** and verify all mapped values.
 - [ ] From a draft Job, use **Fetch From → Estimation** and verify all mapped values.
 - [ ] Confirm a draft, cancelled, or already-used Estimation is rejected server-side during Job save.
+- [ ] From a saved Job, use **Create → Shipment Order** and verify Job, Customer, and Branch are prefilled.
+- [ ] From a saved Job, use **Create → Shipment** and verify Job details plus pickup/delivery stops are prefilled.
+- [ ] From a saved Shipment Order, use **Create → Shipment** and verify the Shipment Order, cargo values, Job load type, and route stops are prefilled.
+- [ ] Confirm Trip Plan appears under the Workspace Operations card and respects branch permissions.
+- [ ] From a Shipment with remaining cargo, use **Create → Trip Plan** and **Create → Trip** and verify its allocation and stop sequences are prefilled.
+- [ ] From a saved Trip Plan, use **Create → Trip** and verify the Trip Plan link, resources, schedule, and allocations are preserved.
+- [ ] From a saved Trip, use **Create → POD**; verify single-shipment prefilling, multi-shipment selection, signature/attachment submission, and duplicate prevention.
+- [ ] Configure the Transport Service Item, then from a verified POD use **Create → Sales Invoice** and verify the customer, service item, Job revenue, total, and Logix source links.
 - [ ] Run `bench --site <production-site> run-tests --app logix` in an approved non-live test environment.
 
 ## Verification evidence
 
 - Local migration: passing.
 - Asset build: passing.
-- Administrator permissions: 14 standalone DocTypes verified in live metadata on `logix.localhost`.
-- Naming Series defaults: all 8 recognized by Frappe after migration on `logix.localhost`.
+- Administrator permissions: 16 standalone DocTypes defined with explicit full access.
+- Naming Series defaults: all 10 defined with app-managed defaults.
 - Naming Series upgrade patch: executed successfully on `logix.localhost`.
 - Naming counter migration: native counter keys synchronized with the highest existing Logix document numbers.
-- Job workflow test module: 3 tests passing, including draft rejection and submitted Estimation mapping.
+- Job workflow test module: 9 tests passing, covering Estimation eligibility/mapping, downstream Shipment creation, all three Trip planning paths, Trip-to-POD creation/submission, and POD-to-Sales-Invoice mapping.
+- Full Logix suite: 12 tests passing after local migration.
+- Downstream creation regression coverage maps Job to Shipment Order/Shipment and Shipment Order to Shipment, including source links, shared fields, cargo values, load type, and route stops.
 - Python compilation, JavaScript syntax checks, JSON parsing, and `git diff --check`: passing.
 - Workspace metadata: public `1`, hidden `0`, module `Logix`.
-- Workspace content: 30 links and 4 shortcuts.
+- Workspace content: 31 links and 4 shortcuts verified in live metadata on `logix.localhost`.
 
 ## Current change details
 
@@ -85,6 +99,8 @@ Status definitions: **Done**, **In Progress**, **Ready for Production Verificati
 | Logix Handover | `HND-` |
 | Logix Shipment Leg | `LEG-` |
 | Logix Transport Rate Card | `TRC-` |
+| Logix Trip Plan | `TPL-.YYYY.-` |
+| Logix POD | `POD-.YYYY.-` |
 
 ### Estimation-to-Job workflow
 
@@ -108,6 +124,37 @@ Status definitions: **Done**, **In Progress**, **Ready for Production Verificati
 - Configured Logix Load Type with `autoname: field:load_type_name`.
 - Made both naming fields unique and enabled controlled renaming.
 - Added patch `v1_0_6_name_logix_masters_by_title` to replace legacy hash names and update linked records through Frappe's rename mechanism.
+
+### Job and Shipment Order downstream creation
+
+- Added **Create → Shipment Order** and **Create → Shipment** to saved, non-cancelled Jobs.
+- Added **Create → Shipment** to saved, non-cancelled Shipment Orders.
+- Added permission-checked server-side mappers for all three creation paths.
+- Job-based Shipments inherit Job, Customer, Branch, Load Type, and pickup/delivery stops from the Job route.
+- Shipment Order-based Shipments inherit the Shipment Order and Job links, cargo quantities and measurements, Job Load Type, and pickup/delivery stops from the Job route.
+
+### Trip planning workflow
+
+- Added the submittable, branch-scoped Logix Trip Plan DocType with resource, schedule, notes, and shipment allocation fields.
+- Added Trip Plan to the Workspace Operations card and linked generated Trips back through `Logix Trip.trip_plan`.
+- Added **Create → Trip Plan** and **Create → Trip** to Shipments with remaining cargo.
+- Added **Create → Trip** to saved, non-cancelled Trip Plans.
+- Shipment mappings allocate only remaining cargo and carry proportional weight, CBM, pallets, and pickup/delivery stop sequences.
+
+### Trip-to-POD workflow
+
+- Added the submittable, branch-scoped Logix POD DocType with recipient, delivery outcome, delivered quantity, signature, attachment, and remarks fields.
+- Added **Create → POD** to saved, non-cancelled Trips; Trips with multiple active Shipments prompt the user to select one.
+- POD drafts inherit Trip, Shipment, Job, Customer, Branch, and allocated quantity.
+- Server validation prevents cross-Trip/cross-Branch records, over-delivery, missing submission evidence, and duplicate active PODs for the same Trip and Shipment.
+
+### POD-to-Sales-Invoice workflow
+
+- Added **Create → Sales Invoice** to verified, submitted PODs for users who can create Sales Invoices.
+- Sales Invoice drafts use the Logix Settings Transport Service Item and the Job's Agreed Revenue, with quantity one and calculated totals.
+- Added read-only POD, Trip, Shipment, and Job links to Sales Invoice through upgrade patch `v1_0_7_add_sales_invoice_logix_links`.
+- Server validation requires a verified POD, an enabled sales Item, positive Job revenue, a default Company, source read access, and Sales Invoice create permission.
+- A second non-cancelled Sales Invoice cannot be created from the same POD.
 
 ## Maintenance rules
 

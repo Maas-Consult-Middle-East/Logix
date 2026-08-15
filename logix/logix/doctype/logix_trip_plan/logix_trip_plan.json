@@ -1,0 +1,105 @@
+{
+ "allow_import": 1,
+ "autoname": "naming_series:",
+ "doctype": "DocType",
+ "fields": [
+  {
+   "default": "TPL-.YYYY.-",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Naming Series",
+   "options": "TPL-.YYYY.-",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Branch",
+   "options": "Branch",
+   "reqd": 1
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Planning Status",
+   "options": "Draft\nPlanned\nConverted\nCancelled"
+  },
+  {
+   "fieldname": "resource_mode",
+   "fieldtype": "Select",
+   "label": "Resource Mode",
+   "options": "Company Owned\nPeriod Contracted\nPer Trip Contracted\nOutsourced Transport Service",
+   "reqd": 1
+  },
+  {
+   "fieldname": "vehicle",
+   "fieldtype": "Link",
+   "label": "Vehicle",
+   "options": "Vehicle"
+  },
+  {
+   "fieldname": "driver",
+   "fieldtype": "Link",
+   "label": "Driver",
+   "options": "Driver"
+  },
+  {
+   "fieldname": "supplier",
+   "fieldtype": "Link",
+   "label": "Supplier",
+   "options": "Supplier"
+  },
+  {
+   "fieldname": "vendor_vehicle",
+   "fieldtype": "Data",
+   "label": "Vendor Vehicle"
+  },
+  {
+   "fieldname": "vendor_driver",
+   "fieldtype": "Data",
+   "label": "Vendor Driver"
+  },
+  {
+   "fieldname": "planned_start",
+   "fieldtype": "Datetime",
+   "label": "Planned Start"
+  },
+  {
+   "fieldname": "planned_end",
+   "fieldtype": "Datetime",
+   "label": "Planned End"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Planning Notes"
+  },
+  {
+   "fieldname": "allocations",
+   "fieldtype": "Table",
+   "label": "Shipment Allocations",
+   "options": "Logix Trip Shipment Allocation",
+   "reqd": 1
+  }
+ ],
+ "is_submittable": 1,
+ "module": "Logix",
+ "name": "Logix Trip Plan",
+ "naming_rule": "By \"Naming Series\" field",
+ "permissions": [
+  {"amend": 1, "cancel": 1, "create": 1, "delete": 1, "email": 1, "export": 1, "import": 1, "print": 1, "read": 1, "report": 1, "role": "Administrator", "select": 1, "share": 1, "submit": 1, "write": 1},
+  {"cancel": 1, "create": 1, "delete": 1, "read": 1, "role": "System Manager", "submit": 1, "write": 1},
+  {"cancel": 1, "create": 1, "read": 1, "role": "Logix Manager", "submit": 1, "write": 1},
+  {"cancel": 1, "create": 1, "read": 1, "role": "Logix Dispatcher", "submit": 1, "write": 1},
+  {"create": 1, "read": 1, "role": "Logix Operations User", "write": 1},
+  {"read": 1, "role": "Logix Read Only"}
+ ],
+ "search_fields": "branch,status,vehicle,driver,supplier",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

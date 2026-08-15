@@ -102,6 +102,16 @@
   {
    "hidden": 0,
    "is_query_report": 0,
+   "label": "Trip Plan",
+   "link_count": 0,
+   "link_to": "Logix Trip Plan",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
    "label": "Trip",
    "link_count": 0,
    "link_to": "Logix Trip",
