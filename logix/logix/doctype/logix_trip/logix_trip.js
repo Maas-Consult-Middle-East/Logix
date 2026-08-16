@@ -7,6 +7,19 @@ frappe.ui.form.on("Logix Trip", {
 			return;
 		}
 
+		if (frm.doc.vehicle && frm.doc.driver && frappe.model.can_create("Logix Fuel Transaction")) {
+			frm.add_custom_button(
+				__("Fuel Transaction"),
+				() => frappe.new_doc("Logix Fuel Transaction", {
+					trip: frm.doc.name,
+					vehicle: frm.doc.vehicle,
+					driver: frm.doc.driver,
+					branch: frm.doc.branch,
+				}),
+				__("Create")
+			);
+		}
+
 		const shipments = [
 			...new Set(
 				(frm.doc.allocations || [])

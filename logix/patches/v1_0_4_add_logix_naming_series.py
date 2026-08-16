@@ -11,6 +11,7 @@ NAMING_SERIES = {
 	"Logix Transport Rate Card": "TRC-",
 	"Logix Trip Plan": "TPL-.YYYY.-",
 	"Logix Trip": "TRIP-.YYYY.-",
+	"Logix Fuel Transaction": "FUEL-.YYYY.-",
 }
 
 

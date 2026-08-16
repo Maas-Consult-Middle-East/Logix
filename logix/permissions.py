@@ -56,6 +56,10 @@ def pod_query(user=None):
 	return get_branch_query_conditions("Logix POD", user)
 
 
+def fuel_transaction_query(user=None):
+	return get_branch_query_conditions("Logix Fuel Transaction", user)
+
+
 def has_branch_permission(doc, user=None, permission_type=None):
 	branches = allowed_branches(user)
 	return branches is None or bool(doc.branch and doc.branch in branches)

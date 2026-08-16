@@ -353,6 +353,68 @@ def make_sales_invoice_from_pod(source_name):
 
 
 @frappe.whitelist()
+def make_purchase_invoice_from_fuel(source_name):
+	"""Create an ERPNext Purchase Invoice draft from a submitted Fuel Transaction."""
+	fuel = frappe.get_doc("Logix Fuel Transaction", source_name)
+	fuel.check_permission("read")
+	if fuel.docstatus != 1:
+		frappe.throw(_("Submit the Fuel Transaction before creating a Purchase Invoice."))
+	if not frappe.has_permission("Purchase Invoice", ptype="create"):
+		frappe.throw(_("You do not have permission to create a Purchase Invoice."), frappe.PermissionError)
+
+	existing_invoice = frappe.db.exists(
+		"Purchase Invoice", {"logix_fuel_transaction": fuel.name, "docstatus": ["<", 2]}
+	)
+	if existing_invoice:
+		frappe.throw(_("Purchase Invoice {0} already exists for this Fuel Transaction.").format(existing_invoice))
+	if not fuel.supplier:
+		frappe.throw(_("Select a Fuel Supplier before creating a Purchase Invoice."))
+
+	item_code = fuel.fuel_item or frappe.db.get_single_value("Logix Settings", "default_fuel_item")
+	item = frappe.db.get_value(
+		"Item",
+		item_code,
+		["disabled", "is_purchase_item", "item_name", "description", "stock_uom"],
+		as_dict=True,
+	) if item_code else None
+	if not item or item.disabled or not item.is_purchase_item:
+		frappe.throw(_("Set an enabled purchase Item as the Fuel Item or Default Fuel Item."))
+
+	invoice = frappe.new_doc("Purchase Invoice")
+	invoice.company = fuel.company
+	invoice.currency = fuel.currency
+	invoice.supplier = fuel.supplier
+	invoice.supplier_name = frappe.db.get_value("Supplier", fuel.supplier, "supplier_name")
+	invoice.posting_date = fuel.posting_date
+	invoice.due_date = fuel.posting_date
+	invoice.logix_fuel_transaction = fuel.name
+	invoice.append(
+		"items",
+		{
+			"item_code": item_code,
+			"item_name": item.item_name,
+			"description": _("{0}<br>Vehicle {1}, Trip {2}, Odometer {3} km").format(
+				item.description or item.item_name, fuel.vehicle, fuel.trip, fuel.odometer
+			),
+			"uom": item.stock_uom,
+			"conversion_factor": 1,
+			"qty": flt(fuel.fuel_quantity),
+			"rate": flt(fuel.rate),
+			"expense_account": frappe.db.get_value(
+				"Item Default", {"parent": item_code, "company": fuel.company}, "expense_account"
+			)
+			or frappe.db.get_value("Company", fuel.company, "default_expense_account"),
+			"cost_center": frappe.db.get_value(
+				"Item Default", {"parent": item_code, "company": fuel.company}, "buying_cost_center"
+			)
+			or frappe.db.get_value("Company", fuel.company, "cost_center"),
+		},
+	)
+	invoice.run_method("calculate_taxes_and_totals")
+	return invoice
+
+
+@frappe.whitelist()
 def create_job_from_estimation(estimation):
 	est = frappe.get_doc("Logix Estimation", estimation)
 	est.check_permission("read")

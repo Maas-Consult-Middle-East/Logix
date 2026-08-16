@@ -45,10 +45,10 @@
     "parent": "Logix",
     "parentfield": "links",
     "parenttype": "Workspace",
-    "report_ref_doctype": null,
-    "type": "Link"
-   },
-   {
+   "report_ref_doctype": null,
+   "type": "Link"
+  },
+  {
     "dependencies": null,
     "description": null,
     "hidden": 0,
@@ -298,6 +298,42 @@
     "parentfield": "links",
     "parenttype": "Workspace",
     "report_ref_doctype": null,
+    "type": "Link"
+   },
+   {
+    "dependencies": null,
+    "description": null,
+    "hidden": 0,
+    "icon": null,
+    "is_query_report": 0,
+    "label": "Fuel Transaction",
+    "link_count": 0,
+    "link_to": "Logix Fuel Transaction",
+    "link_type": "DocType",
+    "onboard": 1,
+    "only_for": null,
+    "parent": "Logix",
+    "parentfield": "links",
+    "parenttype": "Workspace",
+    "report_ref_doctype": null,
+    "type": "Link"
+   },
+   {
+    "dependencies": null,
+    "description": null,
+    "hidden": 0,
+    "icon": null,
+    "is_query_report": 1,
+    "label": "Fuel Analytics",
+    "link_count": 0,
+    "link_to": "Fuel Analytics",
+    "link_type": "Report",
+    "onboard": 0,
+    "only_for": null,
+    "parent": "Logix",
+    "parentfield": "links",
+    "parenttype": "Workspace",
+    "report_ref_doctype": "Logix Fuel Transaction",
     "type": "Link"
    },
    {

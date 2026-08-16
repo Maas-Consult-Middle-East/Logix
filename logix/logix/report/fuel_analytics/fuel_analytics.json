@@ -1,0 +1,19 @@
+{
+ "add_total_row": 1,
+ "disabled": 0,
+ "doctype": "Report",
+ "is_standard": "Yes",
+ "module": "Logix",
+ "name": "Fuel Analytics",
+ "prepared_report": 0,
+ "ref_doctype": "Logix Fuel Transaction",
+ "report_name": "Fuel Analytics",
+ "report_type": "Script Report",
+ "roles": [
+  {"role":"System Manager"},
+  {"role":"Logix Manager"},
+  {"role":"Logix Finance User"},
+  {"role":"Logix Operations User"},
+  {"role":"Logix Read Only"}
+ ]
+}

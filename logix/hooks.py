@@ -19,6 +19,7 @@ permission_query_conditions = {
 	"Logix Trip Plan": "logix.permissions.trip_plan_query",
 	"Logix Trip": "logix.permissions.trip_query",
 	"Logix POD": "logix.permissions.pod_query",
+	"Logix Fuel Transaction": "logix.permissions.fuel_transaction_query",
 }
 
 has_permission = {
@@ -29,6 +30,15 @@ has_permission = {
 	"Logix Trip Plan": "logix.permissions.has_branch_permission",
 	"Logix Trip": "logix.permissions.has_branch_permission",
 	"Logix POD": "logix.permissions.has_branch_permission",
+	"Logix Fuel Transaction": "logix.permissions.has_branch_permission",
+}
+
+doc_events = {
+	"Purchase Invoice": {
+		"after_insert": "logix.services.fuel.sync_fuel_purchase_invoice",
+		"on_cancel": "logix.services.fuel.sync_fuel_purchase_invoice",
+		"on_trash": "logix.services.fuel.clear_fuel_purchase_invoice",
+	},
 }
 
 # Apps

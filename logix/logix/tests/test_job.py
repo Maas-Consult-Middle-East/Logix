@@ -5,6 +5,7 @@ from frappe.exceptions import ValidationError
 
 from logix.api import (
 	make_job,
+	make_purchase_invoice_from_fuel,
 	make_pod,
 	make_sales_invoice_from_pod,
 	make_shipment,
@@ -295,3 +296,85 @@ class TestLogixJob(unittest.TestCase):
 		self.assertEqual(invoice.items[0].qty, 1)
 		self.assertEqual(invoice.items[0].rate, job.agreed_revenue)
 		self.assertEqual(invoice.grand_total, job.agreed_revenue)
+
+	def test_fuel_transaction_calculates_and_maps_to_purchase_invoice(self):
+		shipment = self._shipment()
+		vehicle = "LOGIX-TEST-FUEL-VEHICLE"
+		if not frappe.db.exists("Vehicle", vehicle):
+			frappe.get_doc(
+				{
+					"doctype": "Vehicle",
+					"license_plate": vehicle,
+					"make": "Logix Test",
+					"model": "Fuel Test",
+					"last_odometer": 1000,
+					"fuel_type": "Diesel",
+					"uom": "Litre",
+				}
+			).insert(ignore_permissions=True)
+		driver = self._master("Driver", {"full_name": "Logix Fuel Test Driver", "status": "Active"})
+		trip = make_trip_from_shipment(shipment.name)
+		trip.resource_mode = "Company Owned"
+		trip.vehicle = vehicle
+		trip.driver = driver
+		trip.insert()
+
+		company = frappe.defaults.get_user_default("Company")
+		settings = frappe.get_single("Logix Settings")
+		settings.default_fuel_efficiency_kmpl = 8
+		settings.abnormal_fuel_variance_percent = 20
+		settings.save()
+
+		fuel = frappe.get_doc(
+			{
+				"doctype": "Logix Fuel Transaction",
+				"trip": trip.name,
+				"branch": trip.branch,
+				"vehicle": vehicle,
+				"driver": driver,
+				"company": company,
+				"odometer": 1100,
+				"fuel_quantity": 20,
+				"rate": 2,
+			}
+		).insert()
+		self.assertEqual(fuel.previous_odometer, 1000)
+		self.assertEqual(fuel.distance_travelled, 100)
+		self.assertEqual(fuel.total_cost, 40)
+		self.assertEqual(fuel.actual_efficiency, 5)
+		self.assertEqual(fuel.efficiency_variance_percent, 37.5)
+		self.assertEqual(fuel.is_abnormal, 1)
+		fuel.submit()
+		self.assertEqual(frappe.db.get_value("Vehicle", vehicle, "last_odometer"), 1100)
+
+		supplier = self._master(
+			"Supplier",
+			{
+				"supplier_name": "Logix Fuel Test Supplier",
+				"supplier_group": frappe.db.get_value("Supplier Group", {"is_group": 0}),
+				"supplier_type": "Company",
+			},
+		)
+		item_code = "Logix Test Fuel Item"
+		if not frappe.db.exists("Item", item_code):
+			frappe.get_doc(
+				{
+					"doctype": "Item",
+					"item_code": item_code,
+					"item_name": item_code,
+					"item_group": frappe.db.get_value("Item Group", {"is_group": 0}),
+					"stock_uom": frappe.db.get_value("UOM", {"enabled": 1}),
+					"is_stock_item": 0,
+					"is_purchase_item": 1,
+				}
+			).insert()
+		fuel.db_set({"supplier": supplier, "fuel_item": item_code})
+
+		invoice = make_purchase_invoice_from_fuel(fuel.name)
+		self.assertTrue(invoice.is_new())
+		self.assertEqual(invoice.supplier, supplier)
+		self.assertEqual(invoice.logix_fuel_transaction, fuel.name)
+		self.assertEqual(invoice.items[0].item_code, item_code)
+		self.assertEqual(invoice.items[0].qty, 20)
+		self.assertEqual(invoice.items[0].rate, 2)
+		self.assertEqual(invoice.grand_total, 40)
