@@ -13,3 +13,4 @@ logix.patches.v1_0_5_sync_logix_naming_counters
 logix.patches.v1_0_6_name_logix_masters_by_title
 logix.patches.v1_0_7_add_sales_invoice_logix_links
 logix.patches.v1_0_8_add_fuel_accounting_fields
+logix.patches.v1_0_9_name_routes_by_cities
