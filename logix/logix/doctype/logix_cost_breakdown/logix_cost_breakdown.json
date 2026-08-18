@@ -1,0 +1,8 @@
+{
+ "doctype":"DocType","name":"Logix Cost Breakdown","module":"Logix","istable":1,"editable_grid":1,
+ "fields":[
+  {"fieldname":"description","label":"Description","fieldtype":"Data","reqd":1,"in_list_view":1},
+  {"fieldname":"amount","label":"Amount","fieldtype":"Currency","non_negative":1,"reqd":1,"in_list_view":1},
+  {"fieldname":"notes","label":"Notes","fieldtype":"Small Text"}
+ ]
+}

@@ -5,6 +5,9 @@ from frappe.utils import getdate
 
 
 class LogixTransportRateCard(Document):
+	def before_insert(self):
+		frappe.throw(_("Transport Rate Card is archived. Create a customer Contract Rate instead."))
+
 	def validate(self):
 		if self.from_city == self.to_city:
 			frappe.throw(_("From City and To City must be different."))

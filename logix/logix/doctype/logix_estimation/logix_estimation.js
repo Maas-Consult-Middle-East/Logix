@@ -1,155 +1,129 @@
-// Copyright (c) 2026, MAAS Consult and contributors
-// For license information, please see license.txt
-
 frappe.ui.form.on("Logix Estimation", {
+	setup(frm) {
+		frm.set_query("contract_rate", () => ({
+			filters: {
+				customer: frm.doc.customer || "",
+				currency: frm.doc.currency || "",
+				disabled: 0,
+				requires_review: 0,
+				applicable_from: ["<=", frm.doc.estimation_date || frappe.datetime.get_today()],
+				applicable_to: [">=", frm.doc.estimation_date || frappe.datetime.get_today()],
+			},
+		}));
+	},
 	refresh(frm) {
-		if (frm.doc.vehicle_type) {
-			update_vehicle_capacity(frm);
-		} else {
-			render_vehicle_capacity(frm, {});
+		frm.toggle_display("costing_tab", Boolean(frm.doc.__onload && frm.doc.__onload.can_view_costing));
+		render_connections(frm);
+		if (frm.doc.docstatus === 0) {
+			frm.add_custom_button(__("Recalculate Commercials"), () => recalculate(frm));
 		}
-
-		if (frm.doc.docstatus === 0 && !frm.doc.downstream_job) {
-			frm.add_custom_button(__("Apply Rate Card"), () => {
-				frm.call("preview_rate_card").then((response) => {
-					const values = response.message || {};
-					frm.set_value("pricing_source", "Rate Card");
-					frm.set_value("rate_card", values.rate_card);
-					frm.set_value("estimated_revenue", values.estimated_revenue);
-					frm.set_value("currency", values.currency);
-				});
-			});
-		}
-
-		if (frm.doc.docstatus === 1 && !frm.doc.downstream_job) {
-			frm.add_custom_button(
-				__("Job"),
-				() => {
-					frappe.model.open_mapped_doc({
-						method: "logix.api.make_job",
-						frm,
-					});
-				},
-				__("Create")
-			);
+		if (frm.doc.docstatus === 1 && frm.doc.status === "Accepted") {
+			frm.add_custom_button(__("Job"), () => {
+				frappe.model.open_mapped_doc({ method: "logix.api.make_job", frm });
+			}, __("Create"));
 		}
 	},
-	vehicle_type: update_vehicle_capacity,
-	base_weight: update_vehicle_capacity,
-	cbm: update_vehicle_capacity,
+	customer(frm) {
+		if (!frm.doc.contract_rate) return;
+		frappe.db.get_value("Logix Contract Rate", frm.doc.contract_rate, "customer").then(({ message }) => {
+			if (message && message.customer !== frm.doc.customer) {
+				frm.set_value("contract_rate", null);
+				mark_contract_rows_for_repricing(frm);
+				frappe.show_alert({ message: __("Contract Rate was cleared because the Customer changed. Contract-priced rows require recalculation."), indicator: "orange" });
+			}
+		});
+	},
+	estimation_date(frm) { warn_invalid_contract(frm); },
+	currency(frm) { warn_invalid_contract(frm); },
+	contract_rate(frm) {
+		if (!frm.doc.contract_rate) return;
+		frappe.db.get_value("Logix Contract Rate", frm.doc.contract_rate, ["currency", "customer"]).then(({ message }) => {
+			if (!message) return;
+			if (!frm.doc.currency) frm.set_value("currency", message.currency);
+			if (frm.doc.currency && frm.doc.currency !== message.currency) {
+				frm.set_value("contract_rate", null);
+				frappe.throw(__("The selected Contract Rate uses currency {0}. Change the Estimation currency first.", [message.currency]));
+			}
+		});
+		if ((frm.doc.items || []).some(row => row.pricing_source === "Contract Rate")) {
+			mark_contract_rows_for_repricing(frm);
+			frappe.msgprint(__("Contract-derived rows are marked for recalculation. Manual and override rows were retained."));
+		}
+	},
+	taxes_and_charges_template(frm) {
+		frm.call("apply_tax_template").then(response => {
+			frm.doc.taxes = response.message || [];
+			frm.refresh_field("taxes");
+			recalculate(frm);
+		});
+	},
 });
 
-let capacity_request = 0;
-
-function update_vehicle_capacity(frm) {
-	if (!frm.doc.vehicle_type) {
-		render_vehicle_capacity(frm, {});
-		return;
-	}
-
-	const request = ++capacity_request;
-	frm.call("preview_vehicle_capacity").then((response) => {
-		if (request !== capacity_request) {
-			return;
+frappe.ui.form.on("Logix Estimation Item", {
+	form_render(frm, cdt, cdn) { configure_item_row(frm, locals[cdt][cdn]); },
+	bill_by(frm, cdt, cdn) { configure_item_row(frm, locals[cdt][cdn]); },
+	rate(frm, cdt, cdn) {
+		const row = locals[cdt][cdn];
+		if (row.pricing_source === "Contract Rate" && flt(row.suggested_rate) !== flt(row.rate)) {
+			frappe.model.set_value(cdt, cdn, "manual_rate_override", 1);
+			frappe.show_alert({message: __("Provide an Override Reason before saving."), indicator: "orange"});
 		}
-		const utilization = response.message || {};
-		frm.doc.weight_utilization_percent = utilization.weight_utilization_percent || 0;
-		frm.doc.volume_utilization_percent = utilization.volume_utilization_percent || 0;
-		frm.doc.loading_percentage = utilization.loading_percentage || 0;
-		frm.doc.capacity_basis = utilization.capacity_basis || "Not Configured";
-		frm.refresh_fields([
-			"weight_utilization_percent",
-			"volume_utilization_percent",
-			"loading_percentage",
-			"capacity_basis",
-		]);
-		render_vehicle_capacity(frm, utilization);
+	},
+});
+
+function configure_item_row(frm, row) {
+	const grid_row = frm.fields_dict.items.grid.grid_rows_by_docname[row.name];
+	if (!grid_row || !grid_row.grid_form) return;
+	const visible = {
+		Route: ["from_city", "to_city", "vehicle_type", "load_type", "rate", "number_of_stops", "description"],
+		Weight: ["weight", "weight_uom", "vehicle_type", "load_type", "rate", "description"],
+		CBM: ["cbm", "vehicle_type", "load_type", "rate", "description"],
+		Manual: ["description", "qty", "rate", "amount"],
+	}[row.bill_by] || [];
+	["from_city", "to_city", "vehicle_type", "load_type", "weight", "weight_uom", "cbm", "qty", "rate", "number_of_stops", "description"].forEach(fieldname => {
+		grid_row.grid_form.toggle_display(fieldname, visible.includes(fieldname));
 	});
 }
 
-function render_vehicle_capacity(frm, utilization) {
-	const field = frm.get_field("capacity_visualization");
-	if (!field) {
+function mark_contract_rows_for_repricing(frm) {
+	(frm.doc.items || []).forEach(row => {
+		if (row.pricing_source === "Contract Rate") {
+			frappe.model.set_value(row.doctype, row.name, "needs_repricing", 1);
+			frappe.model.set_value(row.doctype, row.name, "contract_service", null);
+		}
+	});
+}
+
+function warn_invalid_contract(frm) {
+	if (!frm.doc.contract_rate) return;
+	frappe.db.get_value("Logix Contract Rate", frm.doc.contract_rate, ["currency", "applicable_from", "applicable_to"]).then(({ message }) => {
+		if (!message) return;
+		const invalid = message.currency !== frm.doc.currency || frm.doc.estimation_date < message.applicable_from || frm.doc.estimation_date > message.applicable_to;
+		if (invalid) frappe.show_alert({message: __("The selected Contract Rate is no longer valid for this date/currency. Correct it before submission."), indicator: "red"});
+	});
+}
+
+function recalculate(frm) {
+	return frm.call("recalculate_commercials").then(response => {
+		const values = response.message || {};
+		Object.assign(frm.doc, values);
+		frm.refresh_fields(["items", "taxes", "net_total", "additional_discount_percentage", "additional_discount_amount", "total_taxes_and_charges", "grand_total", "estimated_selling_value_excluding_tax", "estimated_profit", "estimated_margin_percent"]);
+	});
+}
+
+function render_connections(frm) {
+	const wrapper = frm.get_field("connections_html").$wrapper;
+	if (frm.is_new()) {
+		wrapper.html(`<div class="text-muted">${__("No Job created from this Estimation yet.")}</div>`);
 		return;
 	}
-
-	if (!frm.doc.vehicle_type) {
-		field.$wrapper.html(
-			'<div class="text-muted">' + __("Select a Vehicle Type to see its loading.") + "</div>"
-		);
-		return;
-	}
-
-	const raw_percentage = flt(utilization.loading_percentage);
-	const percentage = Math.max(0, Math.min(100, raw_percentage));
-	const red_width = (350 * percentage) / 100;
-	const weight_percentage = flt(utilization.weight_utilization_percent);
-	const volume_percentage = flt(utilization.volume_utilization_percent);
-	const basis = utilization.capacity_basis || "Not Configured";
-	const over_capacity = raw_percentage > 100;
-	const status = over_capacity ? __("Over capacity") : __("Loaded");
-	const vehicle = frappe.utils.escape_html(frm.doc.vehicle_type);
-	const formatted_loading = format_number(raw_percentage, null, 1);
-
-	field.$wrapper.html(
-		[
-			'<div style="max-width:680px;padding:12px 0">',
-			'<div style="display:flex;justify-content:space-between;gap:12px;align-items:end;margin-bottom:8px">',
-			'<div><div style="font-weight:600;font-size:14px">',
-			vehicle,
-			'</div><div class="text-muted">',
-			__("Capacity limited by"),
-			": ",
-			__(basis),
-			"</div></div>",
-			'<div style="font-weight:700;font-size:20px;color:',
-			over_capacity ? "var(--red-600)" : "var(--text-color)",
-			'">',
-			formatted_loading,
-			"% ",
-			status,
-			"</div></div>",
-			'<svg viewBox="0 0 430 165" role="img" aria-label="',
-			formatted_loading,
-			"% ",
-			__("vehicle loaded"),
-			'" style="display:block;width:100%;height:auto">',
-			'<defs><clipPath id="logix-lorry-body"><rect x="30" y="38" width="255" height="82" rx="7"></rect><path d="M285 62 H340 L380 96 V120 H285 Z"></path></clipPath></defs>',
-			'<g clip-path="url(#logix-lorry-body)"><rect x="30" y="30" width="350" height="100" fill="var(--green-500, #22a06b)"></rect>',
-			'<rect x="30" y="30" width="',
-			red_width,
-			'" height="100" fill="var(--red-500, #e5484d)"></rect></g>',
-			'<rect x="30" y="38" width="255" height="82" rx="7" fill="none" stroke="var(--gray-900, #1f272e)" stroke-width="5"></rect>',
-			'<path d="M285 62 H340 L380 96 V120 H285 Z" fill="none" stroke="var(--gray-900, #1f272e)" stroke-width="5" stroke-linejoin="round"></path>',
-			'<path d="M343 71 L368 96 H315 V71 Z" fill="var(--blue-100, #d7e9ff)" stroke="var(--gray-900, #1f272e)" stroke-width="4" stroke-linejoin="round"></path>',
-			'<line x1="24" y1="122" x2="390" y2="122" stroke="var(--gray-900, #1f272e)" stroke-width="6" stroke-linecap="round"></line>',
-			'<circle cx="105" cy="127" r="22" fill="var(--gray-900, #1f272e)"></circle><circle cx="105" cy="127" r="9" fill="var(--gray-300, #c9d0d8)"></circle>',
-			'<circle cx="327" cy="127" r="22" fill="var(--gray-900, #1f272e)"></circle><circle cx="327" cy="127" r="9" fill="var(--gray-300, #c9d0d8)"></circle>',
-			'<text x="157" y="88" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="25" font-weight="700">',
-			formatted_loading,
-			"%</text></svg>",
-			'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">',
-			'<span class="indicator-pill blue">',
-			__("Weight"),
-			": ",
-			format_number(weight_percentage, null, 1),
-			'%</span><span class="indicator-pill purple">',
-			__("Volume"),
-			": ",
-			format_number(volume_percentage, null, 1),
-			'%</span><span class="indicator-pill red">',
-			__("Red"),
-			": ",
-			format_number(percentage, null, 1),
-			"% ",
-			__("used"),
-			'</span><span class="indicator-pill green">',
-			__("Green"),
-			": ",
-			format_number(100 - percentage, null, 1),
-			"% ",
-			__("available"),
-			"</span></div></div>",
-		].join("")
-	);
+	frappe.call("logix.logix.doctype.logix_estimation.logix_estimation.get_connected_jobs", {estimation: frm.doc.name}).then(({message}) => {
+		const jobs = message || [];
+		if (!jobs.length) {
+			wrapper.html(`<div class="text-muted">${__("No Job created from this Estimation yet.")}</div>`);
+			return;
+		}
+		const rows = jobs.map(job => `<tr><td><a href="/app/logix-job/${encodeURIComponent(job.name)}">${frappe.utils.escape_html(job.name)}</a></td><td>${frappe.utils.escape_html(job.status || "")}</td><td>${frappe.utils.escape_html(job.customer || "")}</td><td>${frappe.utils.escape_html(job.branch || "")}</td><td>${frappe.datetime.str_to_user(job.creation)}</td></tr>`).join("");
+		wrapper.html(`<div class="table-responsive"><table class="table table-bordered"><thead><tr><th>${__("Job Number")}</th><th>${__("Job Status")}</th><th>${__("Customer")}</th><th>${__("Branch")}</th><th>${__("Creation Date")}</th></tr></thead><tbody>${rows}</tbody></table></div>`);
+	});
 }

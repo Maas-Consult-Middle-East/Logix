@@ -1,0 +1,13 @@
+{
+ "doctype":"DocType","name":"Logix Estimation Tax and Charge","module":"Logix","istable":1,"editable_grid":1,
+ "field_order":["charge_type","account_head","description","rate","tax_amount","total","included_in_print_rate"],
+ "fields":[
+  {"fieldname":"charge_type","label":"Charge Type","fieldtype":"Select","options":"Actual\nOn Net Total\nOn Previous Row Amount\nOn Previous Row Total","default":"On Net Total","reqd":1,"in_list_view":1},
+  {"fieldname":"account_head","label":"Account Head","fieldtype":"Link","options":"Account","in_list_view":1},
+  {"fieldname":"description","label":"Description","fieldtype":"Small Text","reqd":1,"in_list_view":1},
+  {"fieldname":"rate","label":"Rate %","fieldtype":"Float","in_list_view":1},
+  {"fieldname":"tax_amount","label":"Tax Amount","fieldtype":"Currency","in_list_view":1},
+  {"fieldname":"total","label":"Total","fieldtype":"Currency","read_only":1,"in_list_view":1},
+  {"fieldname":"included_in_print_rate","label":"Included in Print Rate","fieldtype":"Check","default":0}
+ ]
+}

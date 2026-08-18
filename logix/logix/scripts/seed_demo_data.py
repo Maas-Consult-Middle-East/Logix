@@ -1,5 +1,5 @@
 import frappe
-from frappe.utils import now_datetime, nowdate
+from frappe.utils import add_days, now_datetime, nowdate
 
 
 DEMO_PREFIX = "LOGIX-DEMO"
@@ -21,7 +21,8 @@ def execute():
 	settings = frappe.get_single("Logix Settings")
 	settings.update({
 		"manual_pricing_allowed": 1,
-		"rate_card_pricing_enabled": 1,
+		"contract_rate_pricing_enabled": 1,
+		"estimation_cost_visibility": 1,
 		"vehicle_capacity_behavior": "Warn",
 		"default_public_tracking_expiry_days": 30,
 	})
@@ -54,33 +55,29 @@ def execute():
 		{"typical_distance_km": 410, "typical_duration_minutes": 300, "active": 1},
 	)
 	currency = frappe.db.get_single_value("Global Defaults", "default_currency") or "SAR"
-	_get_or_create(
-		"Logix Transport Rate Card",
-		{"customer": customer.name, "from_city": origin.name, "to_city": destination.name},
-		{
-			"vehicle_type": vehicle_type.name, "load_type": load_type.name, "base_rate": 2200,
-			"included_weight": 5000, "excess_rate": 100, "extra_stop_charge": 250,
-			"minimum_freight": 2000, "currency": currency, "effective_from": nowdate(),
-		},
-	)
+	contract_rate = _get_or_create("Logix Contract Rate", {"contract_rate_name":"Logix Demo Contract"}, {"customer":customer.name,"currency":currency,"applicable_from":nowdate(),"applicable_to":add_days(nowdate(),365),"contract_services":[{"bill_by":"Route","from_city":origin.name,"to_city":destination.name,"vehicle_type":vehicle_type.name,"load_type":load_type.name,"route_rate":2200,"extra_stop_rate":250,"minimum_charge":2000}]})
 
 	estimation = _get_or_create(
 		"Logix Estimation",
-		{"customer": customer.name, "branch": branch.name, "notes": f"{DEMO_PREFIX} commercial estimate"},
+		{"customer": customer.name, "branch": branch.name, "remarks": f"{DEMO_PREFIX} commercial estimate"},
 		{
-			"status": "Accepted", "from_city": origin.name, "to_city": destination.name,
-			"vehicle_type": vehicle_type.name, "load_type": load_type.name, "base_weight": 8000,
-			"cbm": 30, "pricing_source": "Manual", "estimated_revenue": 2200,
-			"estimated_direct_cost": 1500,
+			"status":"Accepted","company":frappe.db.get_single_value("Global Defaults","default_company"),
+			"estimation_date":nowdate(),"valid_until":add_days(nowdate(),30),"currency":currency,
+			"contract_rate":contract_rate.name,"estimated_direct_cost":1500,
+			"items":[{"bill_by":"Route","from_city":origin.name,"to_city":destination.name,"vehicle_type":vehicle_type.name,"load_type":load_type.name}],
 		},
 	)
+	if estimation.docstatus == 0:
+		estimation.status = "Accepted"
+		estimation.submit()
 	job = _get_or_create(
 		"Logix Job",
 		{"customer": customer.name, "branch": branch.name, "closure_reason": DEMO_PREFIX},
 		{
 			"estimation": estimation.name, "status": "Confirmed", "from_city": origin.name,
 			"to_city": destination.name, "route": route.name, "load_type": load_type.name,
-			"preferred_vehicle_type": vehicle_type.name, "agreed_revenue": 2200, "estimated_cost": 1500,
+			"preferred_vehicle_type": vehicle_type.name, "contract_rate":contract_rate.name,
+			"currency":currency,"agreed_revenue":estimation.grand_total,"estimated_cost":1500,
 		},
 	)
 	if estimation.downstream_job != job.name:

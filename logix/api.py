@@ -5,14 +5,41 @@ import frappe
 from erpnext import get_company_currency
 from frappe import _
 from frappe.model.mapper import get_mapped_doc
-from frappe.utils import add_days, flt, now_datetime
+from frappe.utils import add_days, flt, getdate, now_datetime, nowdate
 
 
 def _validate_estimation_for_job(estimation):
 	if estimation.docstatus != 1:
 		frappe.throw(_("Only submitted Estimations can be used to create a Job."))
-	if estimation.downstream_job:
-		frappe.throw(_("Job {0} has already been created from this Estimation.").format(estimation.downstream_job))
+	if estimation.status != "Accepted":
+		frappe.throw(_("Only an Accepted Estimation can be used to create a Job."))
+	if estimation.valid_until and getdate(estimation.valid_until) < getdate(nowdate()):
+		frappe.throw(_("A Job cannot be created from an expired Estimation."))
+	existing_job = frappe.db.get_value("Logix Job", {"estimation": estimation.name}, "name")
+	if existing_job:
+		frappe.throw(_("Job {0} has already been created from this Estimation.").format(existing_job))
+
+
+def _set_job_commercials(source, target):
+	operational_row = next((row for row in source.items if row.from_city and row.to_city), None)
+	if not operational_row:
+		frappe.throw(_("At least one Estimation Item must provide From and To before creating a Job."))
+	target.from_city = operational_row.from_city
+	target.to_city = operational_row.to_city
+	target.preferred_vehicle_type = operational_row.vehicle_type
+	target.load_type = operational_row.load_type
+	target.contract_rate = source.contract_rate
+	target.currency = source.currency
+	target.commercial_net_total = source.net_total
+	target.additional_discount_amount = source.additional_discount_amount
+	target.discount_basis = source.apply_discount_on
+	target.total_taxes_and_charges = source.total_taxes_and_charges
+	target.agreed_revenue = source.grand_total
+	target.estimated_cost = source.estimated_direct_cost
+	target.estimation_item_summary = "\n".join(
+		_(("{0}: {1} ({2})")).format(row.bill_by, row.description or "", frappe.format_value(row.amount, {"fieldtype": "Currency", "options": source.currency}))
+		for row in source.items
+	)
 
 
 @frappe.whitelist()
@@ -30,15 +57,14 @@ def make_job(source_name, target_doc=None):
 				"doctype": "Logix Job",
 				"field_map": {
 					"name": "estimation",
-					"estimated_revenue": "agreed_revenue",
-					"estimated_direct_cost": "estimated_cost",
-					"vehicle_type": "preferred_vehicle_type",
+					"grand_total": "agreed_revenue",
 				},
 				"field_no_map": ["naming_series", "status"],
 				"validation": {"docstatus": ["=", 1]},
 			},
 		},
 		target_doc,
+		postprocess=_set_job_commercials,
 	)
 
 
@@ -326,17 +352,23 @@ def make_sales_invoice_from_pod(source_name):
 	invoice.logix_trip = pod.trip
 	invoice.logix_shipment = pod.shipment
 	invoice.logix_job = pod.job
-	invoice.append(
-		"items",
-		{
+	estimation = frappe.get_doc("Logix Estimation", job.estimation) if job.estimation else None
+	if hasattr(invoice, "logix_estimation"):
+		invoice.logix_estimation = job.estimation
+		invoice.logix_contract_rate = job.contract_rate
+	invoice.currency = job.currency or invoice.currency
+	commercial_rows = estimation.items if estimation else [frappe._dict({"amount":job.agreed_revenue,"description":"Transport service","bill_by":"Manual"})]
+	for commercial_row in commercial_rows:
+		invoice.append("items", {
 			"item_code": item_code,
 			"item_name": item.item_name,
 			"uom": item.stock_uom,
 			"conversion_factor": 1,
 			"qty": 1,
-			"rate": flt(job.agreed_revenue),
-			"description": _("{0}<br>Job {1}, Shipment {2}, Trip {3}, POD {4}").format(
-				item.description or item.item_name, pod.job, pod.shipment, pod.trip, pod.name
+			"rate": flt(commercial_row.amount),
+			"description": _("{0}<br>{1}: {2}<br>Job {3}, Shipment {4}, Trip {5}, POD {6}").format(
+				item.description or item.item_name, commercial_row.bill_by,
+				commercial_row.description or "", pod.job, pod.shipment, pod.trip, pod.name
 			),
 			"income_account": frappe.db.get_value(
 				"Item Default", {"parent": item_code, "company": company}, "income_account"
@@ -346,8 +378,13 @@ def make_sales_invoice_from_pod(source_name):
 				"Item Default", {"parent": item_code, "company": company}, "selling_cost_center"
 			)
 			or frappe.db.get_value("Company", company, "cost_center"),
-		},
-	)
+		})
+	if estimation:
+		invoice.apply_discount_on = estimation.apply_discount_on
+		invoice.additional_discount_percentage = estimation.additional_discount_percentage
+		invoice.additional_discount_amount = estimation.additional_discount_amount
+		for source_tax in estimation.taxes:
+			invoice.append("taxes", {"charge_type":source_tax.charge_type,"account_head":source_tax.account_head,"description":source_tax.description,"rate":source_tax.rate,"tax_amount":source_tax.tax_amount,"included_in_print_rate":source_tax.included_in_print_rate})
 	invoice.run_method("calculate_taxes_and_totals")
 	return invoice
 
@@ -418,10 +455,11 @@ def make_purchase_invoice_from_fuel(source_name):
 def create_job_from_estimation(estimation):
 	est = frappe.get_doc("Logix Estimation", estimation)
 	est.check_permission("read")
+	frappe.db.sql("select name from `tabLogix Estimation` where name=%s for update", est.name)
+	est.reload()
 	_validate_estimation_for_job(est)
 	job = make_job(est.name)
 	job.insert()
-	frappe.db.set_value("Logix Estimation", est.name, {"status": "Accepted", "downstream_job": job.name})
 	return job.name
 
 

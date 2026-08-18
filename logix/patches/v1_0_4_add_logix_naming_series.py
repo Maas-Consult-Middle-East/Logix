@@ -9,6 +9,7 @@ NAMING_SERIES = {
 	"Logix Shipment Leg": "LEG-",
 	"Logix Shipment Order": "SO-.YYYY.-",
 	"Logix Transport Rate Card": "TRC-",
+	"Logix Contract Rate": "CR-.YYYY.-",
 	"Logix Trip Plan": "TPL-.YYYY.-",
 	"Logix Trip": "TRIP-.YYYY.-",
 	"Logix Fuel Transaction": "FUEL-.YYYY.-",

@@ -1,0 +1,22 @@
+{
+ "doctype": "DocType",
+ "name": "Logix Contract Service",
+ "module": "Logix",
+ "istable": 1,
+ "editable_grid": 1,
+ "field_order": ["bill_by", "from_city", "to_city", "vehicle_type", "load_type", "route_rate", "rate_per_weight", "weight_uom", "rate_per_cbm", "minimum_charge", "extra_stop_rate", "description"],
+ "fields": [
+  {"fieldname":"bill_by","label":"Bill By","fieldtype":"Select","options":"Route\nWeight\nCBM","reqd":1,"in_list_view":1},
+  {"fieldname":"from_city","label":"From","fieldtype":"Link","options":"Logix City","in_list_view":1},
+  {"fieldname":"to_city","label":"To","fieldtype":"Link","options":"Logix City","in_list_view":1},
+  {"fieldname":"vehicle_type","label":"Vehicle Type","fieldtype":"Link","options":"Logix Vehicle Type","in_list_view":1},
+  {"fieldname":"load_type","label":"Load Type","fieldtype":"Link","options":"Logix Load Type","in_list_view":1},
+  {"fieldname":"route_rate","label":"Route Rate","fieldtype":"Currency","non_negative":1,"depends_on":"eval:doc.bill_by=='Route'","in_list_view":1},
+  {"fieldname":"rate_per_weight","label":"Rate per Weight","fieldtype":"Currency","non_negative":1,"depends_on":"eval:doc.bill_by=='Weight'","in_list_view":1},
+  {"fieldname":"weight_uom","label":"Weight UOM","fieldtype":"Link","options":"UOM","depends_on":"eval:doc.bill_by=='Weight'"},
+  {"fieldname":"rate_per_cbm","label":"Rate per CBM","fieldtype":"Currency","non_negative":1,"depends_on":"eval:doc.bill_by=='CBM'","in_list_view":1},
+  {"fieldname":"minimum_charge","label":"Minimum Charge","fieldtype":"Currency","non_negative":1},
+  {"fieldname":"extra_stop_rate","label":"Extra Stop Rate","fieldtype":"Currency","non_negative":1,"depends_on":"eval:doc.bill_by=='Route'"},
+  {"fieldname":"description","label":"Description","fieldtype":"Small Text"}
+ ]
+}

@@ -1,0 +1,34 @@
+{
+ "doctype":"DocType","name":"Logix Contract Rate","module":"Logix","autoname":"naming_series:","naming_rule":"By \"Naming Series\" field","allow_import":1,"track_changes":1,
+ "title_field":"contract_rate_name","search_fields":"contract_rate_name,customer,customer_contract_reference,agreement_number",
+ "field_order":["general_tab","general_section","naming_series","contract_rate_name","customer","customer_name","general_column","currency","applicable_from","applicable_to","disabled","requires_review","services_tab","services_section","contract_services","references_tab","references_section","customer_contract_reference","agreement_number","customer_po_reference","notes"],
+ "fields":[
+  {"fieldname":"general_tab","label":"General","fieldtype":"Tab Break"},
+  {"fieldname":"general_section","label":"General","fieldtype":"Section Break"},
+  {"fieldname":"naming_series","label":"Naming Series","fieldtype":"Select","options":"CR-.YYYY.-","default":"CR-.YYYY.-","reqd":1,"set_only_once":1},
+  {"fieldname":"contract_rate_name","label":"Contract Rate Name","fieldtype":"Data","reqd":1,"in_list_view":1},
+  {"fieldname":"customer","label":"Customer","fieldtype":"Link","options":"Customer","in_list_view":1},
+  {"fieldname":"customer_name","label":"Customer Name","fieldtype":"Data","fetch_from":"customer.customer_name","read_only":1},
+  {"fieldname":"general_column","fieldtype":"Column Break"},
+  {"fieldname":"currency","label":"Currency","fieldtype":"Link","options":"Currency","reqd":1,"in_list_view":1},
+  {"fieldname":"applicable_from","label":"Applicable From","fieldtype":"Date","reqd":1,"in_list_view":1},
+  {"fieldname":"applicable_to","label":"Applicable To","fieldtype":"Date","reqd":1,"in_list_view":1},
+  {"fieldname":"disabled","label":"Disabled","fieldtype":"Check","default":0,"in_list_view":1},
+  {"fieldname":"requires_review","label":"Requires Review","fieldtype":"Check","default":0,"read_only":1},
+  {"fieldname":"services_tab","label":"Contract Services","fieldtype":"Tab Break"},
+  {"fieldname":"services_section","label":"Contract Services","fieldtype":"Section Break"},
+  {"fieldname":"contract_services","label":"Contract Services","fieldtype":"Table","options":"Logix Contract Service","reqd":1},
+  {"fieldname":"references_tab","label":"References / Notes","fieldtype":"Tab Break"},
+  {"fieldname":"references_section","label":"References / Notes","fieldtype":"Section Break"},
+  {"fieldname":"customer_contract_reference","label":"Customer Contract Reference","fieldtype":"Data"},
+  {"fieldname":"agreement_number","label":"Agreement Number","fieldtype":"Data"},
+  {"fieldname":"customer_po_reference","label":"Customer PO / Framework Reference","fieldtype":"Data"},
+  {"fieldname":"notes","label":"Notes","fieldtype":"Text Editor"}
+ ],
+ "permissions":[
+  {"role":"Administrator","read":1,"write":1,"create":1,"delete":1,"report":1,"export":1,"import":1,"share":1,"print":1,"email":1},
+  {"role":"System Manager","read":1,"write":1,"create":1,"delete":1,"report":1,"export":1},
+  {"role":"Logix Manager","read":1,"write":1,"create":1,"delete":1,"report":1,"export":1},
+  {"role":"Logix Estimator","read":1,"select":1}
+ ]
+}

@@ -2,6 +2,7 @@ import unittest
 
 import frappe
 from frappe.exceptions import ValidationError
+from frappe.utils import add_days, nowdate
 
 from logix.api import (
 	make_job,
@@ -20,6 +21,10 @@ from logix.api import (
 class TestLogixJob(unittest.TestCase):
 	def setUp(self):
 		frappe.set_user("Administrator")
+		settings = frappe.get_single("Logix Settings")
+		settings.manual_pricing_allowed = 1
+		settings.estimation_cost_visibility = 1
+		settings.save(ignore_permissions=True)
 		if not frappe.db.exists("Branch", "Logix Test Branch"):
 			frappe.get_doc({"doctype": "Branch", "branch": "Logix Test Branch"}).insert()
 		if not frappe.db.exists("Customer Group", "Logix Test Group"):
@@ -62,16 +67,14 @@ class TestLogixJob(unittest.TestCase):
 			{
 				"doctype": "Logix Estimation",
 				"customer": "Logix Job Test Customer",
+				"company": frappe.db.get_single_value("Global Defaults", "default_company"),
 				"branch": "Logix Test Branch",
 				"status": "Draft",
-				"estimated_revenue": 2500,
+				"estimation_date": nowdate(),
+				"valid_until": add_days(nowdate(), 30),
+				"currency": frappe.db.get_single_value("Global Defaults", "default_currency"),
 				"estimated_direct_cost": 1750,
-				"from_city": self.origin,
-				"to_city": self.destination,
-				"vehicle_type": self.vehicle_type,
-				"load_type": self.load_type,
-				"base_weight": 1000,
-				"pricing_source": "Manual",
+				"items": [{"bill_by":"Manual","description":"Transport service","qty":1,"rate":2500,"from_city":self.origin,"to_city":self.destination,"vehicle_type":self.vehicle_type,"load_type":self.load_type}],
 			}
 		).insert()
 
@@ -112,40 +115,27 @@ class TestLogixJob(unittest.TestCase):
 		with self.assertRaises(ValidationError):
 			self._job(estimation.name).insert()
 
-	def test_estimation_vehicle_capacity_utilization(self):
+	def test_expired_estimation_is_not_eligible(self):
 		estimation = self._estimation()
-		estimation.cbm = 20
-		estimation.save()
-		self.assertEqual(estimation.weight_utilization_percent, 10)
-		self.assertEqual(estimation.volume_utilization_percent, 50)
-		self.assertEqual(estimation.loading_percentage, 50)
-		self.assertEqual(estimation.capacity_basis, "Volume")
-
-		estimation.base_weight = 10000
-		estimation.save()
-		self.assertEqual(estimation.loading_percentage, 100)
-		self.assertEqual(estimation.capacity_basis, "Weight")
-
-		settings = frappe.get_single("Logix Settings")
-		settings.vehicle_capacity_behavior = "Block"
-		settings.save()
-		estimation.base_weight = 11000
+		estimation.valid_until = add_days(nowdate(), -1)
 		with self.assertRaises(ValidationError):
 			estimation.save()
 
 	def test_submitted_estimation_maps_to_job(self):
-		estimation = self._estimation().submit()
+		estimation = self._estimation()
+		estimation.status = "Accepted"
+		estimation.submit()
 		job = make_job(estimation.name)
 
 		self.assertTrue(job.is_new())
 		self.assertEqual(job.estimation, estimation.name)
 		self.assertEqual(job.customer, estimation.customer)
 		self.assertEqual(job.branch, estimation.branch)
-		self.assertEqual(job.from_city, estimation.from_city)
-		self.assertEqual(job.to_city, estimation.to_city)
-		self.assertEqual(job.preferred_vehicle_type, estimation.vehicle_type)
-		self.assertEqual(job.load_type, estimation.load_type)
-		self.assertEqual(job.agreed_revenue, estimation.estimated_revenue)
+		self.assertEqual(job.from_city, estimation.items[0].from_city)
+		self.assertEqual(job.to_city, estimation.items[0].to_city)
+		self.assertEqual(job.preferred_vehicle_type, estimation.items[0].vehicle_type)
+		self.assertEqual(job.load_type, estimation.items[0].load_type)
+		self.assertEqual(job.agreed_revenue, estimation.grand_total)
 		self.assertEqual(job.estimated_cost, estimation.estimated_direct_cost)
 		self.assertEqual(job.status, "Draft")
 

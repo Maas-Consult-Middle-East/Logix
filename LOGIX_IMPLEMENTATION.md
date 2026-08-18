@@ -2,69 +2,71 @@
 
 ## Architecture
 
-Logix is an installable Frappe/ERPNext v15 app. ERPNext owns accounting and the Customer, Supplier, Branch, Vehicle, Driver, Item, Sales Invoice, and Purchase Invoice masters/transactions. Logix owns commercial and operational logistics records. Business rules live in Python controllers/services; `docstatus` remains separate from operational status.
+Logix is an installable Frappe/ERPNext v15 app. ERPNext owns accounting plus standard Customer, Company, Branch, Currency, Contact, Address, Sales Person, Terms and Conditions, tax templates, Item, Sales Invoice, and Purchase Invoice records. Logix owns commercial logistics agreements, estimations, jobs, and operational documents. Server-side Python controllers and services are authoritative; no Frappe or ERPNext core code is modified.
 
-## Environment
+## Commercial model
 
-- Bench: `logix-bench`; site: `logix.localhost`; app: `logix`
-- Frappe 15.117.0, ERPNext 15.119.0, Logix 0.0.1
-- Developer mode and tests enabled
+The active flow is Customer → Contract Rate → Contract Services → Estimation → Estimation Items → Taxes and Charges → Discount → Commercial Total → Costing and Profitability → Acceptance → Job.
 
-## Implemented inventory
+- `Logix Contract Rate` is customer-specific, currency-specific, date-bounded, and can be disabled. It owns `Logix Contract Service` rules.
+- Contract Services consistently use Bill By `Route`, `Weight`, or `CBM`. Route rules support controlled vehicle/load fallbacks, minimum charge, and an optional extra-stop rate. Weight rules require an exact UOM because automatic currency/UOM conversion is intentionally not implemented.
+- `Logix Estimation Item` supports `Route`, `Weight`, `CBM`, and permission-controlled `Manual` billing. Every row records Contract Rate, Manual, or Override pricing provenance; overrides retain suggested rate, reason, user, and timestamp.
+- `logix.services.contract_pricing` is the single active pricing engine. It validates customer, currency, estimation date, contract dates, disabled/review state, and most-specific service matching.
+- Estimation totals use one server calculation path: item amounts → net total → taxes/charges → additional discount by selected basis → grand total. Profitability uses selling value excluding tax, so tax does not inflate revenue or margin.
 
-- Foundation: Logix Settings, City, Route, Load Type, Vehicle Type, roles, ERPNext custom fields, branch permission hooks, and a version-controlled Logix Workspace with operational shortcuts and grouped Commercial, Operations, Fleet, Masters, Billing, and Setup cards.
-- Commercial: Logix Estimation, Transport Rate Card, Logix Job, customer-default inheritance, estimation requirement/acceptance/locking, rate precedence and weight/CBM/stop/minimum/return pricing service.
-- Estimation pricing and capacity: route, vehicle/load type, numeric weight/CBM, extra stops, and trip-pricing inputs support server-side Rate Card calculation or explicitly permitted Manual pricing. Estimation also calculates the tighter of weight/CBM vehicle utilization and renders a red-used/green-available lorry visualization. Applied rate card and currency remain traceable on the Estimation.
-- Shipment: Shipment Order, Shipment, Shipment Stop, Shipment Leg, Trip Shipment Allocation, Shipment Event, Handover, and POD.
-- Trips (foundation): Logix Trip Plan and Logix Trip with mixed resource modes, owned/vendor resources, split/shared allocations, source-plan and backhaul linkage, mapped Shipment-to-plan/trip creation paths, Trip-to-POD creation, and verified POD-to-Sales-Invoice creation.
-- Security/services: controlled shipment transitions, audited overrides, random public tracking tokens, expiry/revocation checks, allowlisted guest response.
+## Estimation form
 
-## Status lifecycles
+`Logix Estimation` has exactly four top-level tabs:
 
-- Estimation: Draft → Submitted → Sent to Customer → Accepted/Rejected.
-- Job: Draft → Confirmed → In Progress → Completed; controlled Stopped/Partially Completed/executed-work outcomes require a reason.
-- Shipment: centralized transitions from Draft through planning, pickup, transit/handover, delivery/failure/return.
-- Trip: Draft → Planned → Assigned → Ready → In Progress → Completed/Stopped.
-- Trip Plan: Draft → Planned → Converted/Cancelled.
-- POD: Draft → Verified/Cancelled through submit/cancel lifecycle actions.
+1. Commercial: General, Estimation Items, Taxes & Charges, Discount & Totals.
+2. Costing & Profitability.
+3. References / Additional Information.
+4. Connections.
 
-## Configuration
+Estimation Date defaults to today. Valid Until defaults using `Logix Settings.default_estimation_validity_days` (30 only as a configurable schema default) and cannot precede Estimation Date. The selected Contract Rate must match the Estimation customer/currency and cover Estimation Date. The client filters eligible contracts, while the server repeats all checks.
 
-Estimation requirement and cost visibility, rate-card/manual pricing, capacity behavior, driver-cost profitability, POD invoice gating, recurring generation, tracking expiry, and ERPNext service Item mappings are in Logix Settings.
+Sales Taxes and Charges Template rows are copied into the Logix-owned tax table; the template is never edited. Supported charge types are Actual, On Net Total, On Previous Row Amount, and On Previous Row Total. Additional discount supports Net Total and Grand Total bases.
 
-## Patches
+Cost fields use permission level 1, commercial-manager roles, and the `estimation_cost_visibility` setting. The commercial report omits cost/profit columns unless both controls allow access. The customer-facing `Logix Estimation Commercial` print format excludes cost, profit, margin, pricing provenance, override audit, and internal notes.
 
-- `logix.patches.v1_0_0_create_logix_roles_and_fields`
-- `logix.patches.v1_0_1_create_workspace_and_permissions`
-- `logix.patches.v1_0_2_add_branch_to_user` — adds `User.logix_branch` and makes it an accepted source for branch-scoped access alongside native User Permissions.
-- `logix.patches.v1_0_3_normalize_estimation_measurements` — safely normalizes legacy Estimation weight and CBM text before numeric schema conversion.
+## Job and invoicing integration
 
-Patches are registered in `patches.txt`; measurement normalization runs before model synchronization and the remaining patches run afterward.
+Only a submitted, Accepted, unexpired Estimation can create a Job. Job creation locks the source Estimation row during duplicate validation to prevent concurrent duplicate creation. Existing historical multiple-Job connections are preserved; the Connections tab and Frappe dashboard query all Jobs by `Logix Job.estimation` and never rely on the legacy single-link field.
 
-## APIs
+The Job retains source Estimation, customer, branch, currency, Contract Rate, net total, discount basis/amount, taxes, grand total, summarized service lines, and authorized cost. Once any Job exists, ordinary changes to key commercial Estimation fields are rejected; formal revision uses Cancel and Amend.
 
-- `logix.api.create_job_from_estimation`
-- `logix.api.make_pod`
-- `logix.api.make_sales_invoice_from_pod`
-- `logix.api.regenerate_tracking_token`
-- `logix.api.public_tracking` (guest-safe allowlist)
-- `logix.services.pricing.calculate_transport_price`
-- `logix.services.events.transition_shipment`
+POD-to-Sales-Invoice mapping remains Draft-only. When a Job has an Estimation, it proposes one invoice row per agreed Estimation service, the Estimation tax rows, discount basis/amount, currency, Job, Estimation, and Contract Rate references. Users review the ERPNext document before submission.
 
-## Development demo data
+## Legacy migration
 
-Run `bench --site logix.localhost execute logix.logix.scripts.seed_demo_data.execute` to create an idempotent, linked sample across every currently implemented Logix DocType. Demo data is deliberately not an install patch and is identified with `Logix Demo` / `LOGIX-DEMO` values.
+`logix.patches.v1_1_0_migrate_contract_rates` is idempotent and preserves legacy data:
 
-## Test status
+- Each customer-linked `Logix Transport Rate Card` becomes a `Logix Contract Rate` with migrated Route and, where present, Weight/CBM rules.
+- Customerless legacy cards become disabled Contract Rates marked Requires Review; no Customer is invented.
+- Open-ended legacy validity is preserved with a documented `2099-12-31` migration sentinel.
+- Complex combined excess/return values are retained in migrated rules/notes for commercial verification.
+- Legacy Estimations receive date/company/currency defaults and a Manual child line at the exact prior revenue so historical totals are not silently repriced.
+- The old Transport Rate Card DocType remains hidden/read-only as an archive. Its pricing setting is disabled, and it is not an active engine or Workspace destination.
 
-`bench --site logix.localhost run-tests --app logix`: 13 tests passing. Current coverage includes estimation profit/status, Rate Card calculation, weight/CBM vehicle utilization and capacity blocking, the configurable Job estimation gate, downstream Shipment creation, Shipment/Trip Plan/Trip mappings, Trip-to-POD creation/submission, and POD-to-Sales-Invoice mapping. Migration passes.
+Additional commercial patches add Sales Invoice references and refine customized permission-level access. All patches are registered in `logix/patches.txt`.
 
-## Pending phases / known gaps
+## Workspace, report, and print
 
-Phase 4 is partial. Docket/Waybills, expanded driver UI, costing, storage, broader billing assistants, SLA/incidents, Control Tower, recurring Jobs, reports, print formats, Arabic/RTL QA, expanded permissions, concurrency locking, and the remaining acceptance suite are not yet implemented. The new POD and POD-invoicing workflows still require production verification and must not yet be represented as production-ready.
+The Logix Workspace provides Estimations, Contract Rates, and Jobs shortcuts and uses Contract Rate terminology. `Estimation Commercial Summary` reports customer, contract/validity, currency, Bill By, amounts, discounts, taxes, totals, connected Jobs, and permission-gated profitability. `Logix Estimation Commercial` is the external print format.
+
+## Verification status
+
+On 2026-08-18:
+
+- `bench --site logix.localhost migrate`: passed, including legacy migration.
+- `bench --site logix.localhost run-tests --app logix`: 20 tests passed.
+- Coverage includes exact tab structure, customer/date/currency contract isolation, Route/Weight/CBM/Manual pricing, mismatched route rejection, override audit, taxes, both discount bases, tax-exclusive profitability, Estimation eligibility, Job mapping, and existing operational mappings.
+- In-app browser discovery returned no available browser instance. Visual browser inspection could not be performed in this runtime; migrated Frappe metadata is checked programmatically instead.
+
+## Other implemented scope
+
+Logix continues to provide City, Route, Load Type, Vehicle Type, Shipment Order, Shipment, Shipment Stop/Leg/Event, Trip Plan, Trip, allocation, Handover, POD, Fuel Transaction, branch permission hooks, controlled transitions, tracking tokens, and ERPNext billing/purchasing assistants.
 
 ## Upgrade notes
 
-Never edit Frappe/ERPNext core. Add schema through app DocTypes, registered idempotent patches, and app-managed custom fields. Run migrate, asset build, and the full Logix suite for every upgrade.
-
-Fresh installs run `logix.install.before_install` to provision Workspace role dependencies and `logix.install.after_install` to synchronize the populated Logix Workspace. `logix.install.after_migrate` provides the same idempotent provisioning for existing production sites during upgrades. System Managers and Logix roles can see the Workspace. Fixtures are filtered to Logix-only Custom Fields, Roles, and the Logix Workspace so installing the app cannot import unrelated records from the development site.
+Back up the site, update compatible version-15 branches, then run migrate, build, clear-cache, and the complete Logix test suite. Never edit framework core. Production users should review migrated complex/customerless legacy contracts before enabling them.

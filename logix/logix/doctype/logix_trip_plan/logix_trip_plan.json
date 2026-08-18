@@ -48,17 +48,20 @@
    "options": "Driver"
   },
   {
+   "depends_on": "eval:doc.resource_mode != 'Company Owned'",
    "fieldname": "supplier",
    "fieldtype": "Link",
    "label": "Supplier",
    "options": "Supplier"
   },
   {
+   "depends_on": "eval:doc.resource_mode != 'Company Owned'",
    "fieldname": "vendor_vehicle",
    "fieldtype": "Data",
    "label": "Vendor Vehicle"
   },
   {
+   "depends_on": "eval:doc.resource_mode != 'Company Owned'",
    "fieldname": "vendor_driver",
    "fieldtype": "Data",
    "label": "Vendor Driver"

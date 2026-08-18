@@ -340,5 +340,28 @@
   "translatable": 0,
   "unique": 0,
   "width": null
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Sales Invoice",
+  "fieldname": "logix_estimation",
+  "fieldtype": "Link",
+  "in_standard_filter": 1,
+  "insert_after": "logix_job",
+  "label": "Logix Estimation",
+  "name": "Sales Invoice-logix_estimation",
+  "options": "Logix Estimation",
+  "read_only": 1
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Sales Invoice",
+  "fieldname": "logix_contract_rate",
+  "fieldtype": "Link",
+  "insert_after": "logix_estimation",
+  "label": "Logix Contract Rate",
+  "name": "Sales Invoice-logix_contract_rate",
+  "options": "Logix Contract Rate",
+  "read_only": 1
  }
 ]

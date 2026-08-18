@@ -6,7 +6,9 @@ frappe.ui.form.on("Logix Job", {
 		frm.set_query("estimation", () => ({
 			filters: {
 				docstatus: 1,
-				downstream_job: ["is", "not set"],
+				status: "Accepted",
+				valid_until: [">=", frappe.datetime.get_today()],
+				...(frm.doc.customer ? {customer: frm.doc.customer} : {}),
 			},
 		}));
 	},
@@ -52,7 +54,8 @@ frappe.ui.form.on("Logix Job", {
 					},
 					get_query_filters: {
 						docstatus: 1,
-						downstream_job: ["is", "not set"],
+						status: "Accepted",
+						valid_until: [">=", frappe.datetime.get_today()],
 					},
 				});
 			},

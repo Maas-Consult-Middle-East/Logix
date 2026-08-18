@@ -14,3 +14,7 @@ logix.patches.v1_0_6_name_logix_masters_by_title
 logix.patches.v1_0_7_add_sales_invoice_logix_links
 logix.patches.v1_0_8_add_fuel_accounting_fields
 logix.patches.v1_0_9_name_routes_by_cities
+logix.patches.v1_1_0_migrate_contract_rates
+logix.patches.v1_1_1_add_commercial_invoice_links
+logix.patches.v1_1_2_refine_commercial_permissions
+logix.patches.v1_1_3_clear_ineligible_migrated_contract_links

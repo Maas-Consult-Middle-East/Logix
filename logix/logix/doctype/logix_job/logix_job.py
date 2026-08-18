@@ -1,7 +1,7 @@
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import flt
+from frappe.utils import flt, getdate, nowdate
 
 
 class LogixJob(Document):
@@ -14,7 +14,7 @@ class LogixJob(Document):
 		self.actual_profit = flt(self.agreed_revenue) - flt(self.actual_cost)
 		self.actual_margin_percent = self.actual_profit / flt(self.agreed_revenue) * 100 if self.agreed_revenue else 0
 
-	def on_submit(self):
+	def after_insert(self):
 		if self.estimation:
 			frappe.db.set_value("Logix Estimation", self.estimation, {"status": "Accepted", "downstream_job": self.name})
 
@@ -28,19 +28,29 @@ class LogixJob(Document):
 		if settings.disallow_job_without_estimation and not self.estimation:
 			frappe.throw(_("An eligible Estimation is required for this Job."))
 		if self.estimation:
+			# Serialize Job creation for this Estimation so concurrent inserts cannot
+			# both pass the duplicate check. The row lock lasts to commit/rollback.
+			frappe.db.sql("select name from `tabLogix Estimation` where name=%s for update", self.estimation)
 			estimation = frappe.db.get_value(
 				"Logix Estimation",
 				self.estimation,
-				["customer", "docstatus", "downstream_job"],
+				["customer", "docstatus", "status", "valid_until"],
 				as_dict=True,
 			)
 			if (
 				not estimation
 				or estimation.customer != self.customer
 				or estimation.docstatus != 1
-				or (estimation.downstream_job and estimation.downstream_job != self.name)
+				or estimation.status != "Accepted"
 			):
 				frappe.throw(_("The selected Estimation is not eligible for this Job."))
+			if estimation.valid_until and getdate(estimation.valid_until) < getdate(nowdate()):
+				frappe.throw(_("A Job cannot be created from an expired Estimation."))
+			duplicate = self.is_new() and frappe.db.get_value(
+				"Logix Job", {"estimation": self.estimation}, "name"
+			)
+			if duplicate:
+				frappe.throw(_("Job {0} has already been created from this Estimation.").format(duplicate))
 
 	def _validate_controlled_closure(self):
 		if self.status in ("Stopped", "Partially Completed", "Cancelled with Executed Work Retained") and not self.closure_reason:

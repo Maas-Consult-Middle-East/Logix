@@ -1,0 +1,27 @@
+{
+ "doctype":"DocType","name":"Logix Estimation Item","module":"Logix","istable":1,"editable_grid":1,
+ "field_order":["bill_by","from_city","to_city","vehicle_type","load_type","weight","weight_uom","cbm","qty","rate","amount","number_of_stops","description","contract_service","pricing_source","suggested_rate","needs_repricing","manual_rate_override","override_reason","override_user","override_timestamp"],
+ "fields":[
+  {"fieldname":"bill_by","label":"Bill By","fieldtype":"Select","options":"Weight\nRoute\nCBM\nManual","reqd":1,"in_list_view":1},
+  {"fieldname":"from_city","label":"From","fieldtype":"Link","options":"Logix City","in_list_view":1},
+  {"fieldname":"to_city","label":"To","fieldtype":"Link","options":"Logix City","in_list_view":1},
+  {"fieldname":"vehicle_type","label":"Vehicle Type","fieldtype":"Link","options":"Logix Vehicle Type","in_list_view":1},
+  {"fieldname":"load_type","label":"Load Type","fieldtype":"Link","options":"Logix Load Type","in_list_view":1},
+  {"fieldname":"weight","label":"Weight","fieldtype":"Float","non_negative":1,"in_list_view":1},
+  {"fieldname":"weight_uom","label":"Weight UOM","fieldtype":"Link","options":"UOM"},
+  {"fieldname":"cbm","label":"CBM","fieldtype":"Float","non_negative":1,"in_list_view":1},
+  {"fieldname":"qty","label":"Qty","fieldtype":"Float","default":1,"non_negative":1,"in_list_view":1},
+  {"fieldname":"rate","label":"Rate","fieldtype":"Currency","non_negative":1,"in_list_view":1},
+  {"fieldname":"amount","label":"Amount","fieldtype":"Currency","read_only":1,"in_list_view":1},
+  {"fieldname":"number_of_stops","label":"No. of Stops","fieldtype":"Int","default":0,"non_negative":1},
+  {"fieldname":"description","label":"Description","fieldtype":"Small Text","in_list_view":1},
+  {"fieldname":"contract_service","label":"Contract Service","fieldtype":"Data","read_only":1,"print_hide":1},
+  {"fieldname":"pricing_source","label":"Pricing Source","fieldtype":"Select","options":"Contract Rate\nManual\nOverride","read_only":1,"print_hide":1},
+  {"fieldname":"suggested_rate","label":"Original Suggested Rate","fieldtype":"Currency","read_only":1,"print_hide":1},
+  {"fieldname":"needs_repricing","label":"Needs Repricing","fieldtype":"Check","default":0,"read_only":1,"print_hide":1},
+  {"fieldname":"manual_rate_override","label":"Manual Rate Override","fieldtype":"Check","default":0,"print_hide":1},
+  {"fieldname":"override_reason","label":"Override Reason","fieldtype":"Small Text","depends_on":"manual_rate_override","print_hide":1},
+  {"fieldname":"override_user","label":"Override User","fieldtype":"Link","options":"User","read_only":1,"print_hide":1},
+  {"fieldname":"override_timestamp","label":"Override Timestamp","fieldtype":"Datetime","read_only":1,"print_hide":1}
+ ]
+}
