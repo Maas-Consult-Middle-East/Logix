@@ -30,6 +30,10 @@ def after_install():
 
 def after_migrate():
 	"""Provision or repair the Workspace on both fresh installs and app upgrades."""
+	from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
+	from logix.patches.v1_1_4_migrate_work_order_job_management_fields import WORK_ORDER_FIELDS
+
 	before_install()
+	create_custom_fields({"Work Order": WORK_ORDER_FIELDS}, update=True)
 	create_logix_workspace()
 	frappe.clear_cache()

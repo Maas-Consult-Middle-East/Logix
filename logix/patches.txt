@@ -18,3 +18,4 @@ logix.patches.v1_1_0_migrate_contract_rates
 logix.patches.v1_1_1_add_commercial_invoice_links
 logix.patches.v1_1_2_refine_commercial_permissions
 logix.patches.v1_1_3_clear_ineligible_migrated_contract_links
+logix.patches.v1_1_4_migrate_work_order_job_management_fields

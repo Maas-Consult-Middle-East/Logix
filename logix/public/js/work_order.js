@@ -1,10 +1,8 @@
 frappe.ui.form.on("Work Order", {
 
-    production_status: function(frm) {
+    custom_production_status: function(frm) {
 
-        console.log("Production Status:", frm.doc.production_status);
-
-        if (frm.doc.production_status === "In") {
+        if (frm.doc.custom_production_status === "In") {
             show_material_transfer_dialog(frm);
         }
     }
